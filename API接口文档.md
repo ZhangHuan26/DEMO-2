@@ -210,8 +210,8 @@
 ### 2.5 推荐创作者
 
 - **接口**：`GET /users/recommend`
-- **鉴权**：无需登录（登录态下会过滤掉当前用户自己）
-- **功能**：按近期作品数 × 粉丝增速的简单加权排序推荐创作者，过滤掉当前用户自己、无作品无粉丝的用户以及被冻结的用户。
+- **鉴权**：无需登录（登录态下会过滤掉当前用户自己与已关注的创作者）
+- **功能**：按近期作品数 × 粉丝增速的简单加权排序推荐创作者，过滤掉当前用户自己、**已关注的创作者**、无作品无粉丝的用户以及被冻结的用户。
 
 **传参（Query）**：
 
@@ -229,7 +229,8 @@
 | signature | String | 个性签名 |
 | followerCount | Long | 粉丝数 |
 | articleCount | Long | 文章数 |
-| isFollowing | Boolean | 当前登录用户是否已关注此人（未登录为 false） |
+| isFollowing | Boolean | 恒为 false（已关注的创作者已被过滤，不会出现在推荐列表中） |
+
 
 
 
@@ -1624,6 +1625,91 @@ curl -X POST http://192.168.100.115:8080/files \
 | keyword | string | 是 | 搜索关键字（昵称） |
 
 **返回字段（data）**：`ChatFriendVO` 列表（字段见 11.5）
+
+---
+
+### 11.7 WebSocket 实时消息格式
+
+> 实时收发消息走 WebSocket，连接地址：`ws://host:port/ws/chat?token={登录token}`。
+> 鉴权：通过 query 参数 `token` 校验登录态，无效则拒绝连接。
+
+**客户端发送消息格式（JSON）**：
+
+| 字段 | 类型 | 必填 | 注释 |
+| --- | --- | --- | --- |
+| receiverId | Long | 是 | 接收者用户id |
+| content | String | 是 | 消息内容（不超过2000字符） |
+
+示例：
+```json
+{ "receiverId": 1002, "content": "你好" }
+```
+
+**服务端推送给接收者的消息格式（type=message）**：
+
+| 字段 | 类型 | 注释 |
+| --- | --- | --- |
+| type | String | 固定为 `message` |
+| message | PrivateMessage | 消息对象（字段见 11.1） |
+
+示例：
+```json
+{
+  "type": "message",
+  "message": {
+    "id": 1,
+    "senderId": 1001,
+    "receiverId": 1002,
+    "content": "你好",
+    "isRead": 0,
+    "readAt": null,
+    "createdAt": "2026-08-06T18:09:38"
+  }
+}
+```
+
+**服务端回执给发送者的消息格式（type=ack）**：
+
+| 字段 | 类型 | 注释 |
+| --- | --- | --- |
+| type | String | 固定为 `ack` |
+| message | PrivateMessage | 已保存的消息对象（字段见 11.1） |
+| delivered | Boolean | 接收者是否在线并成功投递 |
+
+示例：
+```json
+{
+  "type": "ack",
+  "message": {
+    "id": 1,
+    "senderId": 1001,
+    "receiverId": 1002,
+    "content": "你好",
+    "isRead": 0,
+    "readAt": null,
+    "createdAt": "2026-08-06T18:09:38"
+  },
+  "delivered": true
+}
+```
+
+**连接成功推送消息格式（type=connected）**：
+
+| 字段 | 类型 | 注释 |
+| --- | --- | --- |
+| type | String | 固定为 `connected` |
+| userId | Long | 当前登录用户id |
+| nickName | String | 当前登录用户昵称 |
+
+**错误消息格式（type=error）**：
+
+| 字段 | 类型 | 注释 |
+| --- | --- | --- |
+| type | String | 固定为 `error` |
+| message | String | 错误提示信息 |
+
+> **说明**：`PrivateMessage` 中的 `createdAt`（发送时间）与 `readAt`（已读时间）为 `LocalDateTime` 类型，服务端序列化为 ISO-8601 字符串格式（如 `2026-08-06T18:09:38`），前端可直接解析。
+
 # 博客系统接口功能详解（四）
 
 > 本文档基于后端实际代码（Controller / DTO / Entity）整理，罗列所有接口的功能、能做什么、返回字段名及注释、传参及注释。
@@ -3338,62 +3424,7 @@ Authorization: Bearer {token}
 
 ---
 
-## 27. 内容模块补充（关注动态）
-
-### 27.1 关注动态（关注的人发布的内容聚合）
-
-- **接口**：`GET /content/follow-feed`
-- **鉴权**：登录
-- **功能**：返回当前登录用户**关注的人**发布的**公共且未隐藏**的文章、视频、文件，三种内容**按创建时间倒序合并**后分页返回。用于"关注-信息流"页面，混合展示关注的人发布的所有类型内容。
-  - 与 `GET /articles/feed`（只返回关注的人的文章）不同，本接口同时聚合文章/视频/文件三种内容。
-  - 与 `GET /content/feed`（内容广场，返回全站所有公共内容）不同，本接口只返回**关注的人**发布的内容。
-  - 只返回公共（`status=0`）且未隐藏（`is_hidden=0`）的内容，私人内容不展示。
-
-**传参（Query）**：
-
-| 参数 | 类型 | 必填 | 默认值 | 注释 |
-| --- | --- | --- | --- | --- |
-| type | string | 否 | - | 内容类型筛选：article-文章 / video-视频 / file-文件，为空返回全部 |
-| page | int | 否 | 1 | 页码，从1开始 |
-| size | int | 否 | 10 | 每页条数 |
-
-**返回字段（data）**：分页的 `ContentCardVO` 列表（统一内容卡片）
-
-| 字段 | 类型 | 注释 |
-| --- | --- | --- |
-| contentType | Integer | 内容类型：1-图文(文章) / 2-视频 / 3-文件 |
-| id | Long | 内容id（对应文章/视频/文件主键） |
-| title | String | 标题（文章/视频标题，文件为原始文件名） |
-| coverImage | String | 封面图（文章/视频封面；文件可为空） |
-| summary | String | 摘要/描述（文章摘要、视频描述、文件可为空） |
-| viewCount | Integer | 阅读量（文章/视频浏览量；文件为下载量） |
-| likeCount | Integer | 点赞数 |
-| favoriteCount | Integer | 收藏数 |
-| commentCount | Integer | 评论数 |
-| authorId | Long | 创作者id |
-| authorName | String | 创作者昵称 |
-| authorAvatar | String | 创作者头像 |
-| categoryId | Long | 分类id |
-| categoryName | String | 分类名称 |
-| categoryCover | String | 分类封面图 |
-| duration | Integer | 视频时长（秒），仅视频有 |
-| fileSize | Long | 文件大小（字节），视频和文件都有 |
-| fileType | Integer | 文件大类：0-其他 1-图片 2-文档 3-视频 4-音频 5-压缩包，仅文件有 |
-| fileExt | String | 文件扩展名，仅文件有 |
-| filePath | String | 文件访问路径，仅文件有 |
-| createdAt | LocalDateTime | 创建时间 |
-
-**请求示例（curl）**：
-
-```bash
-curl -X GET "http://192.168.100.115:8080/content/follow-feed?page=1&size=10" \
-  -H "Authorization: Bearer <你的token>"
-```
-
----
-
 ## 附：已停用（不对外提供）的接口说明
-
 
 以下 Controller 类在代码中已标注"已停用"，**不再注册为 Spring Controller**，因此不对外提供接口，前端无需对接：
 

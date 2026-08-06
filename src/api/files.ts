@@ -192,6 +192,8 @@ export const filesApi = {
     const data = result?.data ?? result;
     const file = data?.file ?? data;
 
+    console.log('[Files API] getFileById raw response:', { result, data, file });
+
     const authorObj = file?.author || file?.user || file?.creator || data?.author || data?.user;
     const isFollowing = 
       authorObj?.isFollowing ??
@@ -208,12 +210,17 @@ export const filesApi = {
       data?.is_following ??
       false;
 
+    console.log('[Files API] Author object:', authorObj);
+    console.log('[Files API] Extracted isFollowing:', isFollowing);
+
     const normalizedAuthor = authorObj ? {
       ...authorObj,
       isFollowing: Boolean(isFollowing),
       nickName: authorObj.nickName || authorObj.nickname || authorObj.username || authorObj.name || '创作者',
       avatar: authorObj.avatar || authorObj.avatarUrl || authorObj.headImg || '',
     } : undefined;
+
+    console.log('[Files API] Normalized author:', normalizedAuthor);
 
     // 处理文件路径，为相对路径添加公共路径前缀
     const fileUrl = file?.fileUrl;
@@ -427,6 +434,18 @@ export const filesApi = {
   // 11.3 DELETE /file-comments/{id}
   deleteComment: async (id: number) => {
     const res = await apiClient.delete(`/file-comments/${id}`);
+    return res.data;
+  },
+
+  // 11.4 POST /file-comments/{id}/like
+  likeComment: async (id: number) => {
+    const res = await apiClient.post(`/file-comments/${id}/like`);
+    return res.data;
+  },
+
+  // 11.5 DELETE /file-comments/{id}/like
+  unlikeComment: async (id: number) => {
+    const res = await apiClient.delete(`/file-comments/${id}/like`);
     return res.data;
   }
 };

@@ -5,9 +5,28 @@ import { FileItem } from '../../types';
 import { resolveImageUrl } from '../../config/env';
 
 export const FileCard: React.FC<{ file: FileItem }> = ({ file }) => {
+  // 格式化日期
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return '今天';
+    if (diffDays === 1) return '昨天';
+    if (diffDays < 7) return `${diffDays}天前`;
+    return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+  };
 
   return (
     <div className="group bg-white border border-neutral-200 rounded-2xl overflow-hidden hover:border-neutral-300 hover:shadow-xl transition-all duration-300 flex flex-col hover:-translate-y-1">
+      {/* 创建日期 - 放在最上方 */}
+      <div className="px-4 pt-3 pb-2 bg-neutral-50 border-b border-neutral-100">
+        <span className="text-xs text-neutral-500 font-medium">
+          {file.createdAt ? formatDate(file.createdAt) : ''}
+        </span>
+      </div>
+
       {/* Preview Image */}
       <Link to={`/files/${file.id}`} className="relative aspect-[16/10] overflow-hidden bg-neutral-100">
         {file.coverImage ? (

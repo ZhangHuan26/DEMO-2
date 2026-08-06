@@ -2,15 +2,18 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Sparkles, Eye, ThumbsUp, Search, Layers, Play, Download, SlidersHorizontal,
-  Star, Heart, Award, ChevronLeft, ChevronRight
+  Star, Heart, Award, ChevronLeft, ChevronRight, UserPlus, UserCheck, Users
 } from 'lucide-react';
 import { articlesApi } from '../../api/articles';
 import { videosApi } from '../../api/videos';
 import { filesApi } from '../../api/files';
 import { categoriesApi, AllCategoriesData } from '../../api/categories';
-import { Article, Video, FileItem } from '../../types';
+import { authApi } from '../../api/auth';
+import { searchApi } from '../../api/search';
+import { Article, Video, FileItem, User } from '../../types';
 import { resolveImageUrl } from '../../config/env';
 import { openAuthorModal } from '../../components/common/AuthorProfileModal';
+import { useAuth } from '../../context/AuthContext';
 
 
 interface PresetCategory {
@@ -104,16 +107,31 @@ const PRESET_CATEGORIES: PresetCategory[] = [
 ];
 
 export const ExplorePage: React.FC = () => {
+  const { user: currentUser } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<string>('为您推荐');
   const [sortOrder, setSortOrder] = useState<'trending' | 'latest' | 'likes'>('trending');
   const [contentType, setContentType] = useState<'all' | 'article' | 'video' | 'file'>('all');
   const [searchKeyword, setSearchKeyword] = useState<string>('');
+  const [isSearching, setIsSearching] = useState(false);
 
   const [articles, setArticles] = useState<Article[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
   const [files, setFiles] = useState<FileItem[]>([]);
   const [allCategories, setAllCategories] = useState<AllCategoriesData>({ articles: [], files: [], videos: [] });
   const [loading, setLoading] = useState(true);
+
+  // 搜索结果状态
+  const [searchResults, setSearchResults] = useState<{
+    articles: Article[];
+    videos: Video[];
+    files: FileItem[];
+    users: User[];
+  }>({ articles: [], videos: [], files: [], users: [] });
+
+  // 推荐创作者相关状态
+  const [creators, setCreators] = useState<User[]>([]);
+  const [creatorsLoading, setCreatorsLoading] = useState(true);
+  const [followingMap, setFollowingMap] = useState<Record<number, boolean>>({});
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
@@ -141,6 +159,69 @@ export const ExplorePage: React.FC = () => {
     };
     loadData();
   }, []);
+
+  // 加载推荐创作者
+  useEffect(() => {
+    const loadCreators = async () => {
+      setCreatorsLoading(true);
+      try {
+        const list = await authApi.getRecommendedCreators();
+        setCreators(list);
+      } catch (err) {
+        console.error('Failed to fetch creators:', err);
+      } finally {
+        setCreatorsLoading(false);
+      }
+    };
+    loadCreators();
+  }, []);
+
+  // 搜索功能 - 使用全局搜索API
+  useEffect(() => {
+    const performSearch = async () => {
+      if (!searchKeyword.trim()) {
+        setSearchResults({ articles: [], videos: [], files: [], users: [] });
+        setIsSearching(false);
+        return;
+      }
+
+      setIsSearching(true);
+      try {
+        const results = await searchApi.globalSearch(searchKeyword, 'all');
+        console.log('[ExplorePage] Search results:', results);
+        
+        const data = results?.data || results;
+        setSearchResults({
+          articles: Array.isArray(data?.articles?.list) ? data.articles.list : (Array.isArray(data?.articles) ? data.articles : []),
+          videos: Array.isArray(data?.videos?.list) ? data.videos.list : (Array.isArray(data?.videos) ? data.videos : []),
+          files: Array.isArray(data?.files?.list) ? data.files.list : (Array.isArray(data?.files) ? data.files : []),
+          users: Array.isArray(data?.users?.list) ? data.users.list : (Array.isArray(data?.users) ? data.users : []),
+        });
+      } catch (err) {
+        console.error('Search failed:', err);
+        setSearchResults({ articles: [], videos: [], files: [], users: [] });
+      }
+    };
+
+    const debounceTimer = setTimeout(performSearch, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [searchKeyword]);
+
+  // 处理关注/取消关注
+  const handleToggleFollow = async (creatorId: number) => {
+    const isFollowing = !!followingMap[creatorId];
+    try {
+      if (isFollowing) {
+        await authApi.unfollowUser(creatorId);
+        setFollowingMap((prev) => ({ ...prev, [creatorId]: false }));
+      } else {
+        await authApi.followUser(creatorId);
+        setFollowingMap((prev) => ({ ...prev, [creatorId]: true }));
+      }
+    } catch (err) {
+      console.error('Failed to toggle follow:', err);
+    }
+  };
 
   // Merge presets with dynamic categories from backend
   const displayCategories = useMemo(() => {
@@ -202,21 +283,23 @@ export const ExplorePage: React.FC = () => {
     ...files.map(f => ({ ...f, workType: 'file' as const, viewCount: f.downloadCount })),
   ];
 
+  // 如果正在搜索，使用搜索结果；否则使用所有作品
+  const displayWorks = isSearching && searchKeyword.trim() ? [
+    ...searchResults.articles.map(a => ({ ...a, workType: 'article' as const })),
+    ...searchResults.videos.map(v => ({ ...v, workType: 'video' as const })),
+    ...searchResults.files.map(f => ({ ...f, workType: 'file' as const, viewCount: f.downloadCount })),
+  ] : allWorks;
+
+  // 如果正在搜索，显示搜索到的用户；否则显示推荐创作者
+  const displayCreators = isSearching && searchKeyword.trim() ? searchResults.users : creators;
+
   // Filter logic
-  const filteredWorks = allWorks.filter(item => {
+  const filteredWorks = displayWorks.filter(item => {
     // Content type filter
     if (contentType !== 'all' && item.workType !== contentType) return false;
 
-    // Search filter
-    if (searchKeyword.trim()) {
-      const q = searchKeyword.toLowerCase();
-      const matchTitle = item.title?.toLowerCase().includes(q);
-      const matchAuthor = item.author?.nickName?.toLowerCase().includes(q);
-      if (!matchTitle && !matchAuthor) return false;
-    }
-
-    // Category filter
-    if (selectedCategory !== '为您推荐' && selectedCategory !== '全部') {
+    // Category filter (only apply when not searching)
+    if (!isSearching && selectedCategory !== '为您推荐' && selectedCategory !== '全部') {
       if (selectedCategory === '关注中') {
         // return subset or all
         return true;
@@ -242,145 +325,9 @@ export const ExplorePage: React.FC = () => {
 
   return (
     <div className="bg-white min-h-screen text-neutral-900 pb-16 font-sans">
-      {/* Top Image Category Filter Bar */}
-      <div className="sticky top-[68px] z-30 bg-white/95 backdrop-blur-md border-b border-neutral-200/80 py-3.5 px-[20px] shadow-xs">
-        <div className="w-full relative group/nav">
-          {/* Left Arrow Button */}
-          {showLeftArrow && (
-            <button
-              onClick={() => scrollByAmount('left')}
-              className="absolute -left-3.5 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 text-neutral-800 shadow-lg border border-neutral-200 flex items-center justify-center hover:scale-110 active:scale-95 transition-all cursor-pointer"
-              title="向左滚动"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-          )}
-
-          {/* Category Scroll Container without scrollbar */}
-          <div
-            ref={scrollContainerRef}
-            onScroll={handleScroll}
-            className="flex items-center gap-3 overflow-x-auto no-scrollbar scroll-smooth py-2 px-3.5 -mx-1"
-          >
-            {displayCategories.map((cat, idx) => {
-              const isSelected = selectedCategory === cat.name;
-              const IconComp = cat.icon;
-
-              return (
-                <button
-                  key={`exp-cat-${cat.id ?? idx}-${idx}`}
-                  onClick={(e) => handleCategoryClick(cat.name, e)}
-                  className={`h-14 px-4.5 rounded-xl flex items-center justify-center gap-2 cursor-pointer shrink-0 relative overflow-hidden group/item transition-all duration-300 border select-none ${
-                    isSelected
-                      ? 'border-[#0057FF] ring-2 ring-[#0057FF] ring-offset-2 scale-[1.03] shadow-md'
-                      : 'border-white/20 hover:scale-[1.02] opacity-90 hover:opacity-100 shadow-2xs'
-                  }`}
-                  style={{
-                    backgroundImage: cat.isBlueTheme && isSelected
-                      ? 'linear-gradient(135deg, #0057FF 0%, #3B82F6 100%)'
-                      : `url(${cat.coverImage})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                  }}
-                >
-                  {/* Dark Overlay Gradient for High Legibility */}
-                  <div
-                    className={`absolute inset-0 transition-colors ${
-                      isSelected
-                        ? cat.isBlueTheme
-                          ? 'bg-transparent'
-                          : 'bg-black/45 group-hover/item:bg-black/35'
-                        : 'bg-black/55 group-hover/item:bg-black/40'
-                    }`}
-                  />
-
-                  {/* Icon & Category Text */}
-                  <div className="relative z-10 flex items-center gap-2 text-white">
-                    {IconComp && (
-                      <IconComp
-                        className={`w-4 h-4 shrink-0 ${
-                          cat.isBlueTheme ? 'text-amber-300 fill-amber-300' : 'text-white'
-                        }`}
-                      />
-                    )}
-                    <span className="text-sm font-bold tracking-wide whitespace-nowrap drop-shadow-sm">
-                      {cat.name}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Right Arrow Button */}
-          {showRightArrow && (
-            <button
-              onClick={() => scrollByAmount('right')}
-              className="absolute -right-3.5 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 text-neutral-800 shadow-lg border border-neutral-200 flex items-center justify-center hover:scale-110 active:scale-95 transition-all cursor-pointer"
-              title="向右滚动"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          )}
-        </div>
-      </div>
-
       <div className="w-full px-[20px] pt-8 space-y-8">
-        {/* Banner Section / Personalized Feed Trigger */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 bg-gradient-to-r from-neutral-50 via-blue-50/30 to-neutral-50 border border-neutral-200/80 p-6 sm:p-7 rounded-2xl shadow-xs">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-neutral-900 flex items-center gap-2.5">
-              <Sparkles className="w-6 h-6 text-[#0057FF]" /> 探索全域创意作品
-            </h1>
-            <p className="text-sm text-neutral-600 mt-1.5 leading-relaxed">
-              汇聚来自视觉、3D、UI/UX、动效与插画领域的全球高分灵感作品
-            </p>
-          </div>
-
-          <button className="px-5 py-2.5 bg-black hover:bg-neutral-800 text-white text-sm font-bold rounded-xl transition-colors flex items-center gap-2 shadow-sm cursor-pointer shrink-0">
-            <SlidersHorizontal className="w-4 h-4 text-amber-400" />
-            <span>打造个性化的信息源</span>
-          </button>
-        </div>
-
         {/* Filter Controls Toolbar */}
         <div className="flex flex-wrap items-center justify-between gap-5 pb-3 border-b border-neutral-200">
-          {/* Work Type Tabs */}
-          <div className="flex items-center gap-2 bg-neutral-100 p-1.5 rounded-2xl">
-            <button
-              onClick={() => setContentType('all')}
-              className={`px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer ${
-                contentType === 'all' ? 'bg-white text-black shadow-xs' : 'text-neutral-600 hover:text-black'
-              }`}
-            >
-              全部作品 ({allWorks.length})
-            </button>
-            <button
-              onClick={() => setContentType('article')}
-              className={`px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer ${
-                contentType === 'article' ? 'bg-white text-[#0057FF] shadow-xs' : 'text-neutral-600 hover:text-black'
-              }`}
-            >
-              图文画廊 ({articles.length})
-            </button>
-            <button
-              onClick={() => setContentType('video')}
-              className={`px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer ${
-                contentType === 'video' ? 'bg-white text-purple-600 shadow-xs' : 'text-neutral-600 hover:text-black'
-              }`}
-            >
-              视频动效 ({videos.length})
-            </button>
-            <button
-              onClick={() => setContentType('file')}
-              className={`px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer ${
-                contentType === 'file' ? 'bg-white text-emerald-600 shadow-xs' : 'text-neutral-600 hover:text-black'
-              }`}
-            >
-              设计资源 ({files.length})
-            </button>
-          </div>
-
           {/* Right Toolbar: Search & Order */}
           <div className="flex items-center gap-3 ml-auto">
             <div className="relative">
@@ -389,7 +336,7 @@ export const ExplorePage: React.FC = () => {
                 type="text"
                 value={searchKeyword}
                 onChange={(e) => setSearchKeyword(e.target.value)}
-                placeholder="筛选探索关键词..."
+                placeholder="搜索作品、创作者..."
                 className="bg-neutral-100 border border-neutral-200 rounded-xl pl-10 pr-4 py-2 text-sm text-neutral-900 focus:outline-none focus:border-[#0057FF] focus:bg-white transition-all w-52 sm:w-72"
               />
             </div>
@@ -540,6 +487,96 @@ export const ExplorePage: React.FC = () => {
             })}
           </div>
         )}
+
+        {/* 推荐创作者区域 */}
+        <div className="mt-16 pt-12 border-t border-neutral-200">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-2xl font-black tracking-tight text-neutral-900 flex items-center gap-2">
+                <Sparkles className="w-6 h-6 text-[#0057FF]" />
+                推荐创作者
+              </h2>
+              <p className="text-sm text-neutral-500 mt-1">
+                发现设计界、艺术领域的杰出创作者，关注他们获取灵感
+              </p>
+            </div>
+            <Link
+              to="/creators"
+              className="text-sm text-[#0057FF] hover:text-blue-700 font-bold flex items-center gap-1 transition-colors"
+            >
+              查看全部
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {creatorsLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((n) => (
+                <div key={n} className="bg-white border border-neutral-200 rounded-2xl p-6 space-y-4 animate-pulse">
+                  <div className="w-16 h-16 bg-neutral-200 rounded-full mx-auto" />
+                  <div className="h-4 bg-neutral-200 rounded w-1/2 mx-auto" />
+                  <div className="h-3 bg-neutral-200 rounded w-3/4 mx-auto" />
+                </div>
+              ))}
+            </div>
+          ) : creators.length === 0 ? (
+            <div className="text-center py-16 bg-neutral-50 border border-neutral-200 rounded-2xl p-8 space-y-3">
+              <Users className="w-12 h-12 text-neutral-400 mx-auto" />
+              <p className="text-neutral-600 font-medium">暂无推荐创作者</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+              {creators.slice(0, 6).map((creator) => (
+                <div
+                  key={creator.id}
+                  className="bg-white border border-neutral-200 hover:border-neutral-300 rounded-2xl p-6 text-center space-y-4 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+                >
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => openAuthorModal(creator.id)}
+                      className="inline-block group cursor-pointer text-center"
+                    >
+                      <img
+                        src={resolveImageUrl(creator.avatar) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'}
+                        alt={creator.nickName}
+                        className="w-20 h-20 rounded-full object-cover mx-auto ring-2 ring-neutral-100 group-hover:scale-105 transition-transform"
+                      />
+                      <h3 className="text-base font-bold text-neutral-900 mt-3 group-hover:text-[#0057FF] transition-colors">
+                        {creator.nickName}
+                      </h3>
+                    </button>
+                    <p className="text-xs text-neutral-500 line-clamp-2 min-h-[32px]">
+                      {creator.signature || '这位创作者很神秘，还没有填写个性签名'}
+                    </p>
+                  </div>
+
+                  {currentUser && currentUser.id !== creator.id && (
+                    <button
+                      onClick={() => handleToggleFollow(creator.id)}
+                      className={`w-full py-2 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        followingMap[creator.id]
+                          ? 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                          : 'bg-[#0057FF] text-white hover:bg-[#0046CC]'
+                      }`}
+                    >
+                      {followingMap[creator.id] ? (
+                        <>
+                          <UserCheck className="w-3.5 h-3.5" />
+                          已关注
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="w-3.5 h-3.5" />
+                          关注
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

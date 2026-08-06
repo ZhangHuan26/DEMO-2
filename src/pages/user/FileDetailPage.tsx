@@ -39,6 +39,9 @@ export const FileDetailPage: React.FC = () => {
       setLoading(true);
       try {
         const item = await filesApi.getFileById(Number(id));
+        console.log('[FileDetailPage] Loaded file:', item);
+        console.log('[FileDetailPage] File author:', item.author);
+        console.log('[FileDetailPage] Author isFollowing:', item.author?.isFollowing);
         setFile(item);
         const comms = await filesApi.getComments(Number(id));
         setComments(comms);

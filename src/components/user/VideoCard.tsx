@@ -6,9 +6,28 @@ import { resolveImageUrl } from '../../config/env';
 import { openAuthorModal } from '../common/AuthorProfileModal';
 
 export const VideoCard: React.FC<{ video: Video }> = ({ video }) => {
+  // 格式化日期
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return '今天';
+    if (diffDays === 1) return '昨天';
+    if (diffDays < 7) return `${diffDays}天前`;
+    return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+  };
 
   return (
     <div className="group bg-white border border-neutral-200 rounded-2xl overflow-hidden hover:border-neutral-300 hover:shadow-xl transition-all duration-300 flex flex-col hover:-translate-y-1">
+      {/* 创建日期 - 放在最上方 */}
+      <div className="px-4 pt-3 pb-2 bg-neutral-50 border-b border-neutral-100">
+        <span className="text-xs text-neutral-500 font-medium">
+          {video.createdAt ? formatDate(video.createdAt) : ''}
+        </span>
+      </div>
+
       {/* 16:9 Cover Image */}
       <Link to={`/videos/${video.id}`} className="relative aspect-video overflow-hidden bg-neutral-100">
         <img

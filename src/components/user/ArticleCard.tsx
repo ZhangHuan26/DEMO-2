@@ -6,7 +6,6 @@ import { resolveImageUrl } from '../../config/env';
 import { openAuthorModal } from '../common/AuthorProfileModal';
 
 export const ArticleCard: React.FC<{ article: Article }> = ({ article }) => {
-
   return (
     <div className="group bg-white border border-neutral-200/90 rounded-2xl overflow-hidden hover:border-neutral-300 hover:shadow-2xl transition-all duration-300 flex flex-col hover:-translate-y-1.5">
       {/* Cover Image */}

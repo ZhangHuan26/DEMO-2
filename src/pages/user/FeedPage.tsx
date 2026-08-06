@@ -3,6 +3,7 @@ import { feedApi } from '../../api/feed';
 import { ArticleCard } from '../../components/user/ArticleCard';
 import { VideoCard } from '../../components/user/VideoCard';
 import { FileCard } from '../../components/user/FileCard';
+import { resolveImageUrl } from '../../config/env';
 import { Heart, Clock } from 'lucide-react';
 
 interface ContentCard {
@@ -151,42 +152,117 @@ export const FeedPage: React.FC = () => {
   });
 
   return (
-    <div className="w-full px-[20px] py-8 space-y-6">
-      <div className="flex items-center justify-between border-b border-neutral-200 pb-4">
-        <div className="flex items-center gap-2">
-          <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
-          <h1 className="text-lg font-bold text-neutral-900">关注动态</h1>
+    <div className="w-full py-8 flex justify-center bg-neutral-50">
+      <div className="w-full max-w-[50%] px-6 space-y-6">
+        <div className="flex items-center justify-between border-b border-neutral-200 pb-4">
+          <div className="flex items-center gap-2">
+            <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
+            <h1 className="text-lg font-bold text-neutral-900">关注动态</h1>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-neutral-500">
+            <Clock className="w-3.5 h-3.5" />
+            <span>按最新发布时间排序</span>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-neutral-500">
-          <Clock className="w-3.5 h-3.5" />
-          <span>按最新发布时间排序</span>
-        </div>
-      </div>
 
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {[...Array(10)].map((_, i) => (
-            <div key={i} className="h-72 bg-neutral-100 rounded-2xl animate-pulse" />
-          ))}
-        </div>
-      ) : contents.length === 0 ? (
-        <div className="py-24 text-center text-neutral-600 text-sm bg-neutral-50 rounded-2xl border border-neutral-200">
-          您关注的创作者暂无最新动态，去关注更多优秀创作者吧！
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {contents.map((item, idx) => {
-            if (item.contentType === 1) {
-              return <ArticleCard key={`feed-article-${item.id}-${idx}`} article={convertToArticle(item)} />;
-            } else if (item.contentType === 2) {
-              return <VideoCard key={`feed-video-${item.id}-${idx}`} video={convertToVideo(item)} />;
-            } else if (item.contentType === 3) {
-              return <FileCard key={`feed-file-${item.id}-${idx}`} file={convertToFile(item)} />;
-            }
-            return null;
-          })}
-        </div>
-      )}
+        {loading ? (
+          <div className="space-y-6">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex gap-4">
+                <div className="w-12 h-12 bg-neutral-100 rounded-full animate-pulse" />
+                <div className="flex-1 space-y-3">
+                  <div className="h-4 bg-neutral-100 rounded w-1/4 animate-pulse" />
+                  <div className="h-40 bg-neutral-100 rounded animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : contents.length === 0 ? (
+          <div className="py-24 text-center text-neutral-600 text-sm bg-neutral-50 rounded-2xl border border-neutral-200">
+            您关注的创作者暂无最新动态，去关注更多优秀创作者吧！
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {contents.map((item, idx) => {
+              // 格式化日期
+              const formatDate = (dateStr: string) => {
+                const date = new Date(dateStr);
+                return date.toLocaleDateString('zh-CN', { 
+                  year: 'numeric', 
+                  month: '2-digit', 
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                });
+              };
+
+              return (
+                <div key={`feed-${item.contentType}-${item.id}-${idx}`} className="flex gap-4 pb-6 border-b border-neutral-100 last:border-b-0">
+                  {/* 左边：用户头像 */}
+                  <div className="shrink-0">
+                    <button
+                      onClick={() => {
+                        if (item.authorId) {
+                          // 使用 openAuthorModal 打开用户详情
+                          const event = new CustomEvent('open-author-modal', { detail: { userId: item.authorId } });
+                          window.dispatchEvent(event);
+                        }
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <img
+                        src={resolveImageUrl(item.authorAvatar) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'}
+                        alt={item.authorName}
+                        className="w-12 h-12 rounded-full object-cover border-2 border-neutral-200 hover:border-[#0057FF] transition-all"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop';
+                        }}
+                      />
+                    </button>
+                  </div>
+
+                  {/* 右边：用户信息、内容和日期 */}
+                  <div className="flex-1 min-w-0">
+                    {/* 用户昵称和作品名称 */}
+                    <div className="mb-2">
+                      <button
+                        onClick={() => {
+                          if (item.authorId) {
+                            const event = new CustomEvent('open-author-modal', { detail: { userId: item.authorId } });
+                            window.dispatchEvent(event);
+                          }
+                        }}
+                        className="font-bold text-[#0057FF] hover:underline cursor-pointer text-sm"
+                      >
+                        {item.authorName}
+                      </button>
+                      <span className="text-neutral-600 text-sm ml-2">
+                        发布了{item.contentType === 1 ? '图文作品' : item.contentType === 2 ? '视频作品' : '设计资源'}
+                      </span>
+                    </div>
+                    
+                    <div className="text-sm text-neutral-900 font-medium mb-3">
+                      {item.title}
+                    </div>
+
+                    {/* 内容卡片 */}
+                    <div className="mb-3">
+                      {item.contentType === 1 && <ArticleCard article={convertToArticle(item)} />}
+                      {item.contentType === 2 && <VideoCard video={convertToVideo(item)} />}
+                      {item.contentType === 3 && <FileCard file={convertToFile(item)} />}
+                    </div>
+
+                    {/* 发布日期 */}
+                    <div className="text-xs text-neutral-400">
+                      {formatDate(item.createdAt)}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

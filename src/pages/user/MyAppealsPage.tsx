@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldAlert, FileText, Send, Clock, CheckCircle2, XCircle } from 'lucide-react';
-import { Appeal } from '../../types';
-import { adminApi } from '../../api/admin';
+import { Appeal, appealsApi } from '../../api/appeals';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -9,7 +8,9 @@ export const MyAppealsPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [appeals, setAppeals] = useState<Appeal[]>([]);
-  const [freezeLogId, setFreezeLogId] = useState('');
+  const [appealType, setAppealType] = useState(1); // 1-账号冻结 2-内容隐藏
+  const [targetType, setTargetType] = useState<number | undefined>(undefined);
+  const [targetId, setTargetId] = useState('');
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -37,9 +38,9 @@ export const MyAppealsPage: React.FC = () => {
     const loadAppeals = async () => {
       setLoading(true);
       try {
-        const list = await adminApi.getMyAppeals();
+        const result = await appealsApi.getMyAppeals();
         // 确保返回的是数组
-        setAppeals(Array.isArray(list) ? list : []);
+        setAppeals(Array.isArray(result.list) ? result.list : []);
       } catch {
         setAppeals([]);
       } finally {
@@ -51,21 +52,29 @@ export const MyAppealsPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reason.trim()) return;
+    if (!reason.trim()) {
+      alert('请填写申诉原因');
+      return;
+    }
+    
     setSubmitting(true);
     try {
-      const created = await adminApi.submitAppeal({
-        targetType: 0, // 账号冻结申诉
-        targetId: user?.id ?? 0,
-        freezeLogId: freezeLogId ? Number(freezeLogId) : undefined,
-        reason,
+      await appealsApi.submitAppeal({
+        appealType,
+        targetType: appealType === 2 ? targetType : undefined,
+        targetId: appealType === 2 && targetId ? Number(targetId) : undefined,
+        reason: reason.trim(),
       });
-      setAppeals(prev => [created, ...prev]);
+      
+      // 重新加载申诉列表
+      const result = await appealsApi.getMyAppeals();
+      setAppeals(Array.isArray(result.list) ? result.list : []);
+      
       setReason('');
-      setFreezeLogId('');
+      setTargetId('');
       alert('申诉提交成功！管理员将尽快为您审查复核。');
-    } catch {
-      alert('申诉提交失败。');
+    } catch (error: any) {
+      alert(error.message || '申诉提交失败');
     } finally {
       setSubmitting(false);
     }
@@ -83,33 +92,70 @@ export const MyAppealsPage: React.FC = () => {
         <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">发起新申诉</h2>
 
         <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1">关联违规/冻结日志 ID (选填)</label>
-          <input
-            type="number"
-            value={freezeLogId}
-            onChange={(e) => setFreezeLogId(e.target.value)}
-            placeholder="例如 12"
+          <label className="block text-xs font-semibold text-neutral-700 mb-2">申诉类型 *</label>
+          <select
+            value={appealType}
+            onChange={(e) => setAppealType(Number(e.target.value))}
             className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-3.5 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-[#0057FF] focus:bg-white transition-all"
-          />
+          >
+            <option value={1}>账号冻结申诉</option>
+            <option value={2}>内容隐藏申诉</option>
+          </select>
         </div>
 
+        {appealType === 2 && (
+          <>
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-2">内容类型 *</label>
+              <select
+                value={targetType || ''}
+                onChange={(e) => setTargetType(e.target.value ? Number(e.target.value) : undefined)}
+                className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-3.5 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-[#0057FF] focus:bg-white transition-all"
+                required
+              >
+                <option value="">请选择内容类型</option>
+                <option value={1}>文章</option>
+                <option value={2}>视频</option>
+                <option value={3}>文件</option>
+                <option value={4}>评论</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-2">内容 ID *</label>
+              <input
+                type="number"
+                value={targetId}
+                onChange={(e) => setTargetId(e.target.value)}
+                placeholder="被隐藏的内容 ID"
+                className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-3.5 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-[#0057FF] focus:bg-white transition-all"
+                required
+              />
+            </div>
+          </>
+        )}
+
         <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1">申诉原因与详细说明 *</label>
+          <label className="block text-xs font-semibold text-neutral-700 mb-2">申诉原因与详细说明 *</label>
           <textarea
             required
-            rows={4}
+            rows={5}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="请详细说明您认为处置有误的原因及合理依据..."
-            className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 text-xs text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#0057FF] focus:bg-white transition-all"
+            className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 text-xs text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#0057FF] focus:bg-white transition-all resize-none"
+            maxLength={500}
           />
+          <div className="mt-1 text-xs text-neutral-500 text-right">
+            {reason.length}/500
+          </div>
         </div>
 
         <div className="flex justify-end pt-2">
           <button
             type="submit"
-            disabled={submitting}
-            className="px-6 py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-md shadow-rose-600/20"
+            disabled={submitting || reason.trim().length < 10}
+            className="px-6 py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-md shadow-rose-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Send className="w-4 h-4" />
             {submitting ? '提交中...' : '提交申诉申请'}
@@ -143,10 +189,10 @@ export const MyAppealsPage: React.FC = () => {
 
               <p className="text-xs text-neutral-800 bg-neutral-50 p-3.5 rounded-xl border border-neutral-200/80 leading-relaxed">{a.reason}</p>
 
-              {a.reply && (
+              {a.handleResult && (
                 <div className="p-3.5 bg-blue-50/80 border border-blue-200 rounded-xl text-xs text-blue-900 leading-relaxed">
                   <span className="font-bold block mb-1 text-[#0057FF]">管理员审核回复：</span>
-                  {a.reply}
+                  {a.handleResult}
                 </div>
               )}
             </div>

@@ -54,11 +54,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         chatWsRef.current = new ChatWebSocketService();
       }
       
-      // 添加全局消息监听器（用于刷新未读数）
+      // 添加全局消息监听器（用于刷新未读数和通知）
       const globalMessageListener = (msg: Message) => {
         console.log('[Auth] Received chat message (actual message object):', msg);
         
-        // 收到新消息时刷新未读数
+        // 如果是别人发给我的消息（我是接收者）
+        if (msg.receiverId === user.id && msg.senderId !== user.id) {
+          console.log('[Auth] Received message from other user, showing notification');
+          
+          // 立即增加未读数（乐观更新）
+          setUnreadChats(prev => prev + 1);
+          
+          // 显示浏览器通知
+          if ('Notification' in window && Notification.permission === 'granted') {
+            const notification = new Notification('新消息', {
+              body: msg.content || '您收到一条新消息',
+              icon: '/favicon.ico',
+              tag: `chat-${msg.senderId}`, // 同一用户的消息会替换旧通知
+            });
+            
+            // 点击通知时聚焦窗口
+            notification.onclick = () => {
+              window.focus();
+              notification.close();
+            };
+          } else if ('Notification' in window && Notification.permission === 'default') {
+            // 请求通知权限
+            Notification.requestPermission().then(permission => {
+              if (permission === 'granted') {
+                new Notification('新消息', {
+                  body: msg.content || '您收到一条新消息',
+                  icon: '/favicon.ico',
+                });
+              }
+            });
+          }
+          
+          // 播放提示音（可选）
+          try {
+            const audio = new Audio('/notification.mp3');
+            audio.volume = 0.5;
+            audio.play().catch(err => console.log('Audio play failed:', err));
+          } catch (err) {
+            // 忽略音频播放错误
+          }
+        }
+        
+        // 异步刷新准确的未读数
         refreshCounts();
       };
       
@@ -72,6 +114,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // 连接WebSocket
       chatWsRef.current.connect(token);
+      
+      // 请求通知权限（页面加载时）
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
       
       return () => {
         // 组件卸载时移除监听器并断开连接

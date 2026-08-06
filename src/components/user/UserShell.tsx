@@ -38,8 +38,8 @@ export const UserShell: React.FC = () => {
     { label: '图文作品', path: '/articles' },
     { label: '视频广场', path: '/videos' },
     { label: '设计资源库', path: '/files' },
-    { label: '推荐创作者', path: '/creators' },
     { label: '关注动态', path: '/feed' },
+    { label: '我的作品', path: '/me/works' },
   ];
 
   return (

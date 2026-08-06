@@ -37,6 +37,9 @@ export const VideoDetailPage: React.FC = () => {
       setLoading(true);
       try {
         const item = await videosApi.getVideoById(Number(id));
+        console.log('[VideoDetailPage] Loaded video:', item);
+        console.log('[VideoDetailPage] Video author:', item.author);
+        console.log('[VideoDetailPage] Author isFollowing:', item.author?.isFollowing);
         setVideo(item);
         const comms = await videosApi.getComments(Number(id));
         setComments(comms);

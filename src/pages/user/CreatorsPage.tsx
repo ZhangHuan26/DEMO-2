@@ -5,6 +5,7 @@ import { authApi } from '../../api/auth';
 import { User } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { openAuthorModal } from '../../components/common/AuthorProfileModal';
+import { resolveImageUrl } from '../../config/env';
 
 export const CreatorsPage: React.FC = () => {
   const { user: currentUser } = useAuth();
@@ -84,7 +85,7 @@ export const CreatorsPage: React.FC = () => {
                   className="inline-block group cursor-pointer text-center"
                 >
                   <img
-                    src={creator.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'}
+                    src={resolveImageUrl(creator.avatar) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'}
                     alt={creator.nickName}
                     className="w-20 h-20 rounded-full object-cover mx-auto ring-2 ring-neutral-100 group-hover:scale-105 transition-transform"
                   />

@@ -81,6 +81,8 @@ export const videosApi = {
     const data = result?.data ?? result;
     const video = data?.video ?? data;
 
+    console.log('[Videos API] getVideoById raw response:', { result, data, video });
+
     const authorObj = video?.author || video?.user || video?.creator || data?.author || data?.user;
     const isFollowing = 
       authorObj?.isFollowing ??
@@ -97,12 +99,17 @@ export const videosApi = {
       data?.is_following ??
       false;
 
+    console.log('[Videos API] Author object:', authorObj);
+    console.log('[Videos API] Extracted isFollowing:', isFollowing);
+
     const normalizedAuthor = authorObj ? {
       ...authorObj,
       isFollowing: Boolean(isFollowing),
       nickName: authorObj.nickName || authorObj.nickname || authorObj.username || authorObj.name || '创作者',
       avatar: authorObj.avatar || authorObj.avatarUrl || authorObj.headImg || '',
     } : undefined;
+
+    console.log('[Videos API] Normalized author:', normalizedAuthor);
 
     return {
       ...video,
@@ -285,5 +292,80 @@ export const videosApi = {
     const result = res.data;
     const rawObj = result?.data ?? result;
     return normalizeComment(rawObj);
+  },
+
+  // 15.3 DELETE /video-comments/{id}
+  deleteComment: async (id: number) => {
+    const res = await apiClient.delete(`/video-comments/${id}`);
+    return res.data;
+  },
+
+  // 15.4 POST /video-comments/{id}/like
+  likeComment: async (id: number) => {
+    const res = await apiClient.post(`/video-comments/${id}/like`);
+    return res.data;
+  },
+
+  // 15.5 DELETE /video-comments/{id}/like
+  unlikeComment: async (id: number) => {
+    const res = await apiClient.delete(`/video-comments/${id}/like`);
+    return res.data;
+  },
+
+  // 视频下载功能
+  /**
+   * 下载视频
+   * GET /videos/{id}/download
+   */
+  downloadVideo: async (id: number) => {
+    const token = localStorage.getItem('token');
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://192.168.100.115:8080'}/videos/${id}/download`, {
+        method: 'GET',
+        headers
+      });
+
+      if (!response.ok) {
+        throw new Error('下载失败');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      const disposition = response.headers.get('content-disposition');
+      let filename = `video_${id}.mp4`;
+      if (disposition && disposition.includes('filename=')) {
+        const match = disposition.match(/filename=["']?([^"';]+)["']?/);
+        if (match && match[1]) {
+          filename = decodeURIComponent(match[1]);
+        }
+      }
+      
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      return { success: true };
+    } catch (error: any) {
+      throw error;
+    }
+  },
+
+  /**
+   * 修改视频下载权限
+   * PUT /videos/{id}/allow-download
+   */
+  updateAllowDownload: async (id: number, allowDownload: number) => {
+    const res = await apiClient.put(`/videos/${id}/allow-download`, { allowDownload });
+    return res.data;
   }
 };

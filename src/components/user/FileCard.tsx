@@ -1,34 +1,28 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Download, Lock } from 'lucide-react';
+import { Download, Lock, Calendar } from 'lucide-react';
 import { FileItem } from '../../types';
 import { resolveImageUrl } from '../../config/env';
 
+const formatDate = (dateStr?: string) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return '';
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) return '今天';
+  if (diffDays === 1) return '昨天';
+  if (diffDays < 7) return `${diffDays}天前`;
+  return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+};
+
 export const FileCard: React.FC<{ file: FileItem }> = ({ file }) => {
-  // 格式化日期
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) return '今天';
-    if (diffDays === 1) return '昨天';
-    if (diffDays < 7) return `${diffDays}天前`;
-    return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
-  };
-
   return (
-    <div className="group bg-white border border-neutral-200 rounded-2xl overflow-hidden hover:border-neutral-300 hover:shadow-xl transition-all duration-300 flex flex-col hover:-translate-y-1">
-      {/* 创建日期 - 放在最上方 */}
-      <div className="px-4 pt-3 pb-2 bg-neutral-50 border-b border-neutral-100">
-        <span className="text-xs text-neutral-500 font-medium">
-          {file.createdAt ? formatDate(file.createdAt) : ''}
-        </span>
-      </div>
-
+    <div className="group bg-white border border-neutral-200/90 rounded-2xl overflow-hidden hover:border-neutral-300 hover:shadow-xl transition-all duration-300 flex flex-col justify-between h-full hover:-translate-y-1">
       {/* Preview Image */}
-      <Link to={`/files/${file.id}`} className="relative aspect-[16/10] overflow-hidden bg-neutral-100">
+      <Link to={`/files/${file.id}`} className="relative aspect-[16/10] overflow-hidden bg-neutral-100 shrink-0">
         {file.coverImage ? (
           <img
             src={resolveImageUrl(file.coverImage)}
@@ -57,7 +51,6 @@ export const FileCard: React.FC<{ file: FileItem }> = ({ file }) => {
           </div>
         )}
 
-
         {/* File Type & Size Badge */}
         <div className="absolute top-3 right-3 flex items-center gap-1.5">
           <span className="px-2 py-0.5 bg-[#0057FF] text-white text-[10px] font-bold uppercase rounded tracking-wider shadow-xs">
@@ -72,14 +65,24 @@ export const FileCard: React.FC<{ file: FileItem }> = ({ file }) => {
       <div className="p-4 flex-1 flex flex-col justify-between">
         <div>
           <Link to={`/files/${file.id}`}>
-            <h3 className="text-sm font-bold text-neutral-900 group-hover:text-[#0057FF] transition-colors line-clamp-2 leading-snug mb-1">
+            <h3 className="text-sm font-bold text-neutral-900 group-hover:text-[#0057FF] transition-colors line-clamp-2 leading-snug mb-1.5 min-h-[2.5rem]">
               {file.title}
             </h3>
           </Link>
-          <p className="text-xs text-neutral-500 line-clamp-2 mb-3">{file.description || file.fileName}</p>
+          <p className="text-xs text-neutral-500 line-clamp-2 leading-relaxed mb-2 min-h-[2rem]">
+            {file.description || file.fileName || '可直接下载的高品质设计资产文件'}
+          </p>
+
+          {/* Published Date under Description */}
+          {file.createdAt && (
+            <div className="flex items-center gap-1 text-[11px] text-neutral-400 font-mono mb-3">
+              <Calendar className="w-3 h-3 text-neutral-400" />
+              <span>{formatDate(file.createdAt)}</span>
+            </div>
+          )}
         </div>
 
-        <div className="pt-3 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-500">
+        <div className="pt-3 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-500 mt-auto">
           <div className="flex items-center gap-1.5 text-emerald-600 font-mono text-[11px] font-semibold">
             <Download className="w-3.5 h-3.5" />
             <span>{file.downloadCount} 次下载</span>
@@ -102,3 +105,4 @@ export const FileCard: React.FC<{ file: FileItem }> = ({ file }) => {
     </div>
   );
 };
+

@@ -1,5 +1,5 @@
 export const LOCAL_SERVER_HOST = (import.meta as any).env?.VITE_API_BASE_URL || 'http://192.168.100.115:8080';
-export const LOCAL_WS_HOST = (import.meta as any).env?.VITE_WS_BASE_URL || 'ws://192.168.100.115:8080';
+export const LOCAL_WS_HOST = (import.meta as any).env?.VITE_WS_BASE_URL || (typeof window !== 'undefined' ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}` : 'ws://localhost:3000');
 
 export const resolveImageUrl = (url?: string): string => {
   if (!url) return '';

@@ -114,27 +114,6 @@ export const adminApi = {
     return res.data;
   },
 
-  // Videos Admin
-  hideVideo: async (id: number, reason: string) => {
-    const res = await apiClient.put(`/admin/videos/${id}/hide`, { reason });
-    return res.data;
-  },
-
-  unhideVideo: async (id: number, reason?: string) => {
-    const res = await apiClient.put(`/admin/videos/${id}/unhide`, { reason: reason || '恢复正常' });
-    return res.data;
-  },
-
-  toggleVideoDownload: async (id: number, allowDownload: number, reason?: string) => {
-    const res = await apiClient.put(`/admin/videos/${id}/allow-download`, { allowDownload, reason });
-    return res.data;
-  },
-
-  deleteVideo: async (id: number) => {
-    const res = await apiClient.delete(`/admin/videos/${id}`);
-    return res.data;
-  },
-
   // Video Comments Admin
   getVideoComments: async (params?: any) => {
     try {

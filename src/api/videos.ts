@@ -325,7 +325,8 @@ export const videosApi = {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://192.168.100.115:8080'}/videos/${id}/download`, {
+      const baseUrl = (import.meta as any).env?.VITE_API_BASE_URL || '';
+      const response = await fetch(`${baseUrl}/videos/${id}/download`, {
         method: 'GET',
         headers
       });

@@ -205,11 +205,6 @@ export const VideoDetailPage: React.FC = () => {
                 <Play className="w-3 h-3 fill-white text-white" />
                 {video.category?.name || video.categoryName || '动效视频秀场'}
               </span>
-              <span className="text-white font-mono text-[11px]">•</span>
-              <span className="flex items-center gap-1 text-[11px] text-white font-mono">
-                <Clock className="w-3 h-3 text-white" />
-                {formatPublishTime(video.createdAt)}
-              </span>
               {video.duration && (
                 <>
                   <span className="text-white font-mono text-[11px]">•</span>

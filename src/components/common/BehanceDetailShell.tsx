@@ -67,37 +67,40 @@ export const BehanceDetailShell: React.FC<BehanceDetailShellProps> = ({
   }, [navigate]);
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/95 md:bg-neutral-950 flex flex-col font-sans text-white selection:bg-[#0057FF] selection:text-white animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[100] bg-black/95 md:bg-[#0a0a0c] flex flex-col font-sans text-white selection:bg-[#0057FF] selection:text-white animate-in fade-in duration-200">
       {/* Floating Top-Right Close Button */}
       <button
         onClick={() => navigate(-1)}
-        className="fixed top-5 right-5 z-[60] p-2.5 text-neutral-300 hover:text-white bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 rounded-full backdrop-blur-xl transition-all cursor-pointer shadow-2xl group"
+        className="fixed top-5 right-5 z-[200] p-3 text-neutral-300 hover:text-white bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-700/80 rounded-full backdrop-blur-2xl transition-all cursor-pointer shadow-2xl group hover:scale-105 active:scale-95"
         title="关闭作品弹窗 (Esc)"
       >
-        <X className="w-5 h-5 group-hover:scale-110 transition-transform" />
+        <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
       </button>
 
       {/* Main Scrollable Workspace Container */}
-      <div className="flex-1 overflow-y-auto min-h-0 relative bg-neutral-950">
+      <div className="flex-1 overflow-y-auto min-h-0 relative bg-[#0a0a0c]">
         {/* 2. Main Stage Media Display Canvas */}
-        <div className="relative w-full bg-neutral-900/60 min-h-[420px] md:min-h-[520px] flex items-center justify-center py-8 px-4 md:px-16 overflow-hidden border-b border-neutral-800/80">
+        <div className="relative w-full bg-gradient-to-b from-neutral-900/80 via-neutral-950 to-[#0a0a0c] min-h-[420px] md:min-h-[520px] flex items-center justify-center py-10 px-4 md:px-16 overflow-hidden border-b border-neutral-800/80">
+          {/* Subtle Ambient Radial Glow */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,87,255,0.08)_0,transparent_70%)] pointer-events-none" />
+
           {/* Center Media Showcase (Fixed width, height auto according to ratio, no cropping) */}
-          <div className="max-w-4xl w-full mx-auto flex items-center justify-center relative px-2 sm:px-4">
+          <div className="max-w-4xl w-full mx-auto flex items-center justify-center relative px-2 sm:px-4 z-10">
             {mediaContent ? (
               mediaContent
             ) : coverImage ? (
               <img
                 src={resolveImageUrl(coverImage)}
                 alt={title}
-                className="w-full h-auto rounded-2xl shadow-2xl border border-neutral-800"
+                className="w-full h-auto rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] border border-neutral-800/90"
               />
             ) : null}
           </div>
         </div>
 
         {/* Body Content Area Below Stage */}
-        <div className="w-full bg-neutral-950 text-white pb-28">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 space-y-10">
+        <div className="w-full bg-[#0a0a0c] text-white pb-32">
+          <div className="max-w-4xl mx-auto px-4 sm:px-8 py-10 space-y-10">
             {children}
           </div>
         </div>
@@ -182,16 +185,18 @@ export const BehanceDetailShell: React.FC<BehanceDetailShellProps> = ({
       {/* 3. Floating Right Action Sidebar (Vertical Pill matching screenshot style) */}
       <div className="fixed right-3 md:right-8 lg:right-12 xl:right-16 top-1/2 -translate-y-1/2 z-50 bg-neutral-900/90 border border-neutral-800 backdrop-blur-2xl rounded-full py-5 px-3 flex flex-col items-center gap-4 text-neutral-200 shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
         {/* Author Avatar with Plus Badge */}
-        <button
-          onClick={() => author?.id && openAuthorModal(author.id)}
-          className="relative group flex flex-col items-center cursor-pointer"
-          title="查看创作者弹窗"
-        >
-          <img
-            src={resolveImageUrl(author?.avatar) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'}
-            alt={author?.nickName || 'Author'}
-            className="w-12 h-12 rounded-full object-cover border-2 border-neutral-200 group-hover:border-[#0057FF] transition-colors"
-          />
+        <div className="relative group flex flex-col items-center">
+          <button
+            onClick={() => author?.id && openAuthorModal(author.id)}
+            className="cursor-pointer"
+            title="查看创作者弹窗"
+          >
+            <img
+              src={resolveImageUrl(author?.avatar) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'}
+              alt={author?.nickName || 'Author'}
+              className="w-12 h-12 rounded-full object-cover border-2 border-neutral-200 group-hover:border-[#0057FF] transition-colors"
+            />
+          </button>
           {author && !author.isFollowing && !isOwner && (
             <button
               onClick={(e) => {
@@ -199,7 +204,7 @@ export const BehanceDetailShell: React.FC<BehanceDetailShellProps> = ({
                 e.stopPropagation();
                 onToggleFollow?.();
               }}
-              className="absolute -bottom-1 -right-1 bg-[#0057FF] hover:bg-[#0046CC] text-white rounded-full p-1 shadow-md cursor-pointer"
+              className="absolute -bottom-1 -right-1 bg-[#0057FF] hover:bg-[#0046CC] text-white rounded-full p-1 shadow-md cursor-pointer z-10"
               title="关注创作者"
             >
               <UserPlus className="w-3.5 h-3.5" />
@@ -210,7 +215,7 @@ export const BehanceDetailShell: React.FC<BehanceDetailShellProps> = ({
           <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-neutral-900 border border-neutral-800 text-white text-xs font-bold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-xl z-50">
             {author?.nickName || '创作者'}
           </div>
-        </button>
+        </div>
 
         <div className="w-6 h-px bg-neutral-800" />
 

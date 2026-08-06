@@ -273,17 +273,12 @@ export const FileDetailPage: React.FC = () => {
       <div className="space-y-8 text-white">
         {/* Title, Category & Description Header */}
         <div className="space-y-4 border-b border-neutral-800 pb-6">
-          {/* Metadata Row: Category, Publish Time & Views */}
+          {/* Metadata Row: Category & Views */}
           <div className="flex flex-wrap items-center justify-between gap-2.5">
             <div className="flex flex-wrap items-center gap-2.5">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/20 text-white text-[11px] font-bold rounded-full border border-emerald-500/30 shadow-xs">
                 <Folder className="w-3 h-3 text-white" />
                 {file.category?.name || file.categoryName || '设计资源库'}
-              </span>
-              <span className="text-white font-mono text-[11px]">•</span>
-              <span className="flex items-center gap-1 text-[11px] text-white font-mono">
-                <Clock className="w-3 h-3 text-white" />
-                {formatPublishTime(file.createdAt)}
               </span>
             </div>
 

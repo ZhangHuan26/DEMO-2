@@ -198,69 +198,158 @@ export const ArticleDetailPage: React.FC = () => {
       }}
     >
       {/* Main Details Body */}
-      <div className="space-y-8 text-white">
+      <div className="space-y-10 text-white">
         {/* Title, Category & Summary Header */}
-        <div className="space-y-4 border-b border-neutral-800 pb-6">
-          {/* Metadata Row: Category, Publish Time & Views */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5">
+        <div className="space-y-6 border-b border-neutral-800/80 pb-8">
+          {/* Top Metadata Row: Category & Views */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2.5">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#0057FF]/20 text-white text-[11px] font-bold rounded-full border border-[#0057FF]/30 shadow-xs">
-                <Tag className="w-3 h-3 text-white" />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#0057FF]/20 text-[#0057FF] text-xs font-extrabold rounded-full border border-[#0057FF]/30 shadow-xs">
+                <Tag className="w-3.5 h-3.5 text-[#0057FF]" />
                 {article.category?.name || article.categoryName || '图文视觉设计'}
-              </span>
-              <span className="text-white font-mono text-[11px]">•</span>
-              <span className="flex items-center gap-1 text-[11px] text-white font-mono">
-                <Clock className="w-3 h-3 text-white" />
-                {formatPublishTime(article.createdAt)}
               </span>
             </div>
 
             {/* View Count Stat Badge */}
-            <div className="inline-flex items-center gap-1 px-2.5 py-1 bg-neutral-900 rounded-full border border-neutral-800 text-[11px] text-white font-mono shadow-xs">
-              <Eye className="w-3 h-3 text-white" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900/90 rounded-full border border-neutral-800 text-xs text-neutral-300 font-mono shadow-xs">
+              <Eye className="w-3.5 h-3.5 text-blue-400" />
               <span className="text-white font-bold">{article.viewCount}</span>
-              <span className="text-white">次浏览</span>
+              <span className="text-neutral-400">次浏览</span>
             </div>
           </div>
 
           {/* Main Title */}
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight leading-snug font-sans">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight leading-snug font-sans">
             {article.title}
           </h1>
 
+          {/* Author Header Bar */}
+          {article.author && (
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-neutral-900/80 border border-neutral-800/80 backdrop-blur-md">
+              <div className="flex items-center gap-3">
+                <img
+                  src={resolveImageUrl(article.author.avatar) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'}
+                  alt={article.author.nickName || 'Author'}
+                  className="w-11 h-11 rounded-full object-cover border-2 border-neutral-700 shadow-sm"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop';
+                  }}
+                />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-sm text-white">{article.author.nickName || '创作者'}</span>
+                  </div>
+                  <p className="text-xs text-neutral-400 line-clamp-1">设计创作者 · 专注于高质量视觉艺术</p>
+                </div>
+              </div>
+
+              {!isOwner && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleToggleFollow}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs ${
+                      article.author.isFollowing
+                        ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border border-neutral-700'
+                        : 'bg-[#0057FF] hover:bg-[#0046CC] text-white shadow-[#0057FF]/30'
+                    }`}
+                  >
+                    {article.author.isFollowing ? <UserCheck className="w-3.5 h-3.5" /> : <UserPlus className="w-3.5 h-3.5" />}
+                    <span>{article.author.isFollowing ? '已关注' : '关注'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setChatTarget(article.author || null);
+                      setIsChatOpen(true);
+                    }}
+                    className="p-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white rounded-xl border border-neutral-700 transition-all cursor-pointer"
+                    title="私信作者"
+                  >
+                    <MessageSquare className="w-4 h-4 text-[#0057FF]" />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Article Summary Quote Box */}
           {article.summary && (
-            <div className="relative p-4 rounded-xl bg-neutral-900 border border-neutral-800 shadow-xs overflow-hidden group">
-              <div className="absolute top-0 left-0 bottom-0 w-1 bg-gradient-to-b from-[#0057FF] to-blue-400" />
-              <p className="text-neutral-300 text-xs sm:text-sm leading-relaxed pl-1 font-normal">
-                {article.summary}
+            <div className="relative p-5 rounded-2xl bg-neutral-900/90 border border-neutral-800 shadow-md overflow-hidden group">
+              <div className="absolute top-0 left-0 bottom-0 w-1.5 bg-gradient-to-b from-[#0057FF] via-blue-500 to-indigo-500" />
+              <p className="text-neutral-300 text-xs sm:text-sm leading-relaxed pl-2 font-medium italic">
+                “{article.summary}”
               </p>
             </div>
           )}
         </div>
 
         {/* Article Full Rich Body Content */}
-        <div className="prose prose-invert max-w-none text-neutral-200 text-sm sm:text-base leading-relaxed whitespace-pre-wrap font-sans space-y-3">
-          {article.content}
+        <div className="space-y-6 text-neutral-200 text-sm sm:text-base leading-relaxed font-sans">
+          {article.content ? (
+            article.content.split('\n\n').map((paragraph, index) => (
+              <p key={index} className="text-neutral-200 leading-relaxed tracking-normal">
+                {paragraph}
+              </p>
+            ))
+          ) : (
+            <p className="text-neutral-400 italic">暂无更多详细正文说明。</p>
+          )}
+        </div>
+
+        {/* Big Interactive Action Buttons Section */}
+        <div className="py-6 border-t border-b border-neutral-800/80 flex flex-wrap items-center justify-center gap-4">
+          <button
+            onClick={handleToggleLike}
+            className={`px-6 py-3 rounded-2xl font-bold text-sm transition-all flex items-center gap-2 cursor-pointer shadow-lg active:scale-95 ${
+              article.isLiked
+                ? 'bg-[#0057FF] text-white shadow-[#0057FF]/40 border border-[#0057FF]'
+                : 'bg-neutral-900 hover:bg-neutral-800 text-neutral-200 border border-neutral-800 hover:border-neutral-700'
+            }`}
+          >
+            <ThumbsUp className={`w-4 h-4 ${article.isLiked ? 'fill-current' : 'text-[#0057FF]'}`} />
+            <span>{article.isLiked ? '已赞赏' : '赞赏作品'}</span>
+            <span className="px-2 py-0.5 bg-white/20 text-xs rounded-full font-mono">{article.likeCount}</span>
+          </button>
+
+          <button
+            onClick={handleToggleFavorite}
+            className={`px-6 py-3 rounded-2xl font-bold text-sm transition-all flex items-center gap-2 cursor-pointer shadow-lg active:scale-95 ${
+              article.isFavorited
+                ? 'bg-amber-500 text-white shadow-amber-500/40 border border-amber-500'
+                : 'bg-neutral-900 hover:bg-neutral-800 text-neutral-200 border border-neutral-800 hover:border-neutral-700'
+            }`}
+          >
+            <Star className={`w-4 h-4 ${article.isFavorited ? 'fill-current' : 'text-amber-400'}`} />
+            <span>{article.isFavorited ? '已保存' : '保存灵感'}</span>
+            <span className="px-2 py-0.5 bg-white/20 text-xs rounded-full font-mono">{article.favoriteCount}</span>
+          </button>
+
+          <button
+            onClick={handleShare}
+            className="px-5 py-3 rounded-2xl font-bold text-sm bg-neutral-900 hover:bg-neutral-800 text-neutral-200 border border-neutral-800 hover:border-neutral-700 transition-all flex items-center gap-2 cursor-pointer shadow-md active:scale-95"
+          >
+            <Share2 className="w-4 h-4 text-emerald-400" />
+            <span>分享作品</span>
+          </button>
         </div>
 
         {/* Metrics Dashboard Bar */}
-        <div className="p-4 bg-neutral-900 rounded-xl border border-neutral-800 shadow-xs flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-neutral-800/90 border border-neutral-700/80 text-xs sm:text-sm font-medium">
+        <div className="p-5 bg-neutral-900/90 rounded-2xl border border-neutral-800/90 shadow-md flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-neutral-800/90 border border-neutral-700/80 text-xs sm:text-sm font-medium">
               <Eye className="w-4 h-4 text-blue-400 shrink-0" />
               <span className="text-white font-extrabold text-sm sm:text-base">{article.viewCount}</span>
-              <span className="text-neutral-200">次浏览</span>
+              <span className="text-neutral-400">次浏览</span>
             </div>
-            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-neutral-800/90 border border-neutral-700/80 text-xs sm:text-sm font-medium">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-neutral-800/90 border border-neutral-700/80 text-xs sm:text-sm font-medium">
               <ThumbsUp className="w-4 h-4 text-blue-400 shrink-0" />
               <span className="text-white font-extrabold text-sm sm:text-base">{article.likeCount}</span>
-              <span className="text-neutral-200">次赞赏</span>
+              <span className="text-neutral-400">次赞赏</span>
             </div>
-            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-neutral-800/90 border border-neutral-700/80 text-xs sm:text-sm font-medium">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-neutral-800/90 border border-neutral-700/80 text-xs sm:text-sm font-medium">
               <Star className="w-4 h-4 text-amber-400 shrink-0" />
               <span className="text-white font-extrabold text-sm sm:text-base">{article.favoriteCount}</span>
-              <span className="text-neutral-200">次保存</span>
+              <span className="text-neutral-400">次保存</span>
             </div>
           </div>
         </div>
@@ -278,31 +367,34 @@ export const ArticleDetailPage: React.FC = () => {
         />
 
         {/* Community Discussion Section */}
-        <div id="comments-section" className="space-y-4 pt-2">
-          <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-            作品评论交流 ({comments.length})
-          </h3>
+        <div id="comments-section" className="space-y-5 pt-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-[#0057FF]" />
+              作品评论交流 <span className="text-xs px-2 py-0.5 bg-neutral-800 text-neutral-300 rounded-full font-mono">{comments.length}</span>
+            </h3>
+          </div>
 
           {/* Comment Form */}
-          <form onSubmit={handleAddComment} className="space-y-2.5">
+          <form onSubmit={handleAddComment} className="space-y-3 bg-neutral-900/80 p-4 rounded-2xl border border-neutral-800">
             {replyingTo && (
-              <div className="flex items-center justify-between text-xs text-blue-400 bg-blue-500/10 p-2.5 rounded-lg border border-blue-500/30">
+              <div className="flex items-center justify-between text-xs text-blue-400 bg-blue-500/10 p-3 rounded-xl border border-blue-500/30">
                 <span>正在回复评论 #{replyingTo.id}...</span>
-                <button type="button" onClick={() => setReplyingTo(null)} className="hover:underline font-bold">取消</button>
+                <button type="button" onClick={() => setReplyingTo(null)} className="hover:underline font-bold cursor-pointer">取消</button>
               </div>
             )}
             <textarea
               required
-              rows={2}
+              rows={3}
               value={newCommentText}
               onChange={(e) => setNewCommentText(e.target.value)}
               placeholder="分享您对该作品的看法或设计建议..."
-              className="w-full bg-neutral-900 border border-neutral-700 rounded-xl p-3.5 text-sm text-white placeholder-neutral-400 focus:outline-none focus:border-[#0057FF] focus:ring-1 focus:ring-[#0057FF] transition-all shadow-inner"
+              className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-3.5 text-xs sm:text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-[#0057FF] focus:ring-2 focus:ring-[#0057FF]/20 transition-all shadow-inner resize-none"
             />
             <div className="flex justify-end">
               <button
                 type="submit"
-                className="px-4 py-2 bg-[#0057FF] hover:bg-[#0046CC] text-white text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-[#0057FF]/20"
+                className="px-5 py-2.5 bg-[#0057FF] hover:bg-[#0046CC] text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-[#0057FF]/30 active:scale-95"
               >
                 <Send className="w-3.5 h-3.5" /> 发表评论
               </button>
@@ -310,44 +402,53 @@ export const ArticleDetailPage: React.FC = () => {
           </form>
 
           {/* Comment List Tree */}
-          <div className="space-y-3 pt-1">
+          <div className="space-y-3 pt-2">
             {comments.length === 0 ? (
-              <p className="text-center py-8 text-xs text-neutral-400 bg-neutral-900 rounded-xl border border-neutral-800">
-                暂无评论，抢先发表对作品的第一条赞赏评语吧！
-              </p>
+              <div className="text-center py-10 text-xs text-neutral-400 bg-neutral-900/60 rounded-2xl border border-neutral-800/80 space-y-1">
+                <MessageSquare className="w-8 h-8 text-neutral-600 mx-auto mb-2" />
+                <p className="font-semibold text-neutral-300">暂无评论</p>
+                <p className="text-neutral-500">抢先发表对作品的第一条赞赏评语吧！</p>
+              </div>
             ) : (
               comments.map((c, idx) => (
-                <div key={`comment-${c.id ?? idx}-${idx}`} className="p-3.5 bg-neutral-900 rounded-xl border border-neutral-800 space-y-2.5">
+                <div key={`comment-${c.id ?? idx}-${idx}`} className="p-4 bg-neutral-900/90 rounded-2xl border border-neutral-800/90 space-y-3 shadow-xs">
                   <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2.5">
-                      <img src={resolveImageUrl(c.author?.avatar) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'} alt="Commenter" className="w-7 h-7 rounded-full object-cover border border-neutral-700" />
-                      <span className="font-bold text-white text-xs sm:text-sm">{c.author?.nickName || '创作者'}</span>
-                      <span className="text-xs text-neutral-400 font-mono">{new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      <img src={resolveImageUrl(c.author?.avatar) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'} alt="Commenter" className="w-8 h-8 rounded-full object-cover border border-neutral-700" />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-white text-xs sm:text-sm">{c.author?.nickName || '创作者'}</span>
+                          {c.author?.id === article.author?.id && (
+                            <span className="px-1.5 py-0.2 bg-[#0057FF]/20 text-[#0057FF] text-[10px] font-bold rounded border border-[#0057FF]/30">作者</span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-neutral-500 font-mono">{new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-2.5">
-                      <button onClick={() => setReplyingTo(c)} className="text-xs text-blue-400 hover:underline font-bold">回复</button>
-                      <button onClick={() => { setReportTarget({ type: 3, id: c.id }); setIsReportOpen(true); }} className="text-neutral-400 hover:text-rose-400 p-1">
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setReplyingTo(c)} className="text-xs text-blue-400 hover:underline font-bold px-2 py-1 rounded-md hover:bg-blue-500/10 transition-colors cursor-pointer">回复</button>
+                      <button onClick={() => { setReportTarget({ type: 3, id: c.id }); setIsReportOpen(true); }} className="text-neutral-500 hover:text-rose-400 p-1 transition-colors cursor-pointer" title="举报评论">
                         <Flag className="w-3.5 h-3.5" />
                       </button>
                       {(c.userId === user?.id || user?.role === 1) && (
-                        <button onClick={() => handleDeleteComment(c.id)} className="text-neutral-400 hover:text-rose-400 p-1">
+                        <button onClick={() => handleDeleteComment(c.id)} className="text-neutral-500 hover:text-rose-400 p-1 transition-colors cursor-pointer" title="删除评论">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       )}
                     </div>
                   </div>
 
-                  <p className="text-xs sm:text-sm text-neutral-200 leading-relaxed pl-9">{c.content}</p>
+                  <p className="text-xs sm:text-sm text-neutral-200 leading-relaxed pl-10">{c.content}</p>
 
                   {/* Sub Replies */}
                   {c.children && c.children.length > 0 && (
-                    <div className="pl-9 pt-1.5 space-y-2">
+                    <div className="pl-10 pt-1 space-y-2">
                       {c.children.map((sub, sIdx) => (
-                        <div key={`sub-${sub.id ?? sIdx}-${sIdx}`} className="p-3 bg-neutral-800/80 rounded-xl text-xs sm:text-sm text-neutral-200 border border-neutral-700/80">
+                        <div key={`sub-${sub.id ?? sIdx}-${sIdx}`} className="p-3 bg-neutral-800/70 rounded-xl text-xs sm:text-sm text-neutral-200 border border-neutral-700/70">
                           <div className="flex items-center justify-between mb-1.5">
                             <span className="font-bold text-white text-xs sm:text-sm">{sub.author?.nickName || '创作者'}</span>
-                            <span className="text-xs text-neutral-400 font-mono">{new Date(sub.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            <span className="text-[10px] text-neutral-400 font-mono">{new Date(sub.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           </div>
                           <p className="text-xs sm:text-sm text-neutral-200 leading-relaxed">{sub.content}</p>
                         </div>

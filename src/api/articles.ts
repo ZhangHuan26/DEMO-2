@@ -1,6 +1,7 @@
 import { apiClient } from './client';
 import { Article, Comment, Category } from '../types';
 import { normalizeComment } from '../utils/normalize';
+import { resolveImageUrl } from '../config/env';
 
 export const articlesApi = {
   // 4.1 GET /article-categories

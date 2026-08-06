@@ -1,29 +1,33 @@
-// 后端 API 地址：优先读取 .env 中的 VITE_API_BASE_URL，否则默认 192.168.100.115:8080
-export const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://192.168.100.115:8080';
-// 后端 WebSocket 地址：优先读取 .env 中的 VITE_WS_BASE_URL，否则默认 ws://192.168.100.115:8080
-export const WS_BASE_URL = (import.meta as any).env?.VITE_WS_BASE_URL || 'ws://192.168.100.115:8080';
-// 兼容旧代码：LOCAL_SERVER_HOST 指向后端 API 地址
-export const LOCAL_SERVER_HOST = API_BASE_URL;
-// 兼容旧代码：LOCAL_WS_HOST 指向后端 WebSocket 地址
-export const LOCAL_WS_HOST = WS_BASE_URL;
+export const LOCAL_SERVER_HOST = (import.meta as any).env?.VITE_API_BASE_URL || 'http://192.168.100.115:8080';
+export const LOCAL_WS_HOST = (import.meta as any).env?.VITE_WS_BASE_URL || 'ws://192.168.100.115:8080';
 
-/**
- * 解析图片地址：
- * - 本地上传的图片若为 Data URL、Blob URL、完整 http(s) URL 或斜杠开头的绝对路径，原样返回
- * - 若为相对路径（如 uploads/abc.jpg），自动补全前缀斜杠或拼接后端 API 地址
- */
-export const resolveImageUrl = (value?: string | null): string => {
-    if (!value) return '';
-    const v = value.trim();
-    if (!v) return '';
-    // 完整 URL、Data URL、Blob URL 或绝对路径：原样返回
-    if (/^(https?:|data:|blob:|\/)/i.test(v)) return v;
-    // 如果是相对文件夹路径如 uploads/... 补充前缀 /
-    if (v.startsWith('uploads/')) {
-        return `/${v}`;
+export const resolveImageUrl = (url?: string): string => {
+  if (!url) return '';
+  if (url.startsWith('data:')) {
+    return url;
+  }
+
+  // 如果已经包含 http:// 或 https://
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    try {
+      const parsed = new URL(url);
+      // 仅当指向本地或局域网开发服务器 (localhost, 127.0.0.1, 192.168.x.x, 10.x.x.x) 时，才替换基准路径
+      if (
+        parsed.hostname === 'localhost' ||
+        parsed.hostname === '127.0.0.1' ||
+        parsed.hostname.startsWith('192.168.') ||
+        parsed.hostname.startsWith('10.')
+      ) {
+        const base = LOCAL_SERVER_HOST.replace(/\/$/, '');
+        return `${base}${parsed.pathname}${parsed.search}${parsed.hash}`;
+      }
+      // 外部 CDN / Unsplash 等公网图片链接，直接原样返回
+      return url;
+    } catch {
+      return url;
     }
-    // 纯文件名：拼接后端公共路径
-    return `${LOCAL_SERVER_HOST}/${v}`;
+  }
+
+  const base = LOCAL_SERVER_HOST.replace(/\/$/, '');
+  return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
 };
-
-

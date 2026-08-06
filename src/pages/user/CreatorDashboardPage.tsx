@@ -48,7 +48,7 @@ export const CreatorDashboardPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-[1400px] mx-auto px-4 lg:px-8 py-8 space-y-8">
+    <div className="w-full px-[20px] py-8 space-y-8">
       <div className="border-b border-neutral-200 pb-4">
         <h1 className="text-xl font-bold text-neutral-900 flex items-center gap-2">
           <TrendingUp className="w-5 h-5 text-[#0057FF]" />

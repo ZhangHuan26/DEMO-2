@@ -6,6 +6,8 @@ import { articlesApi } from '../../api/articles';
 import { videosApi } from '../../api/videos';
 import { filesApi } from '../../api/files';
 import { BehanceImagePicker } from './BehanceImagePicker';
+import { BehanceVideoPicker } from './BehanceVideoPicker';
+import { BehanceFilePicker } from './BehanceFilePicker';
 import { RichTextEditor } from './RichTextEditor';
 
 interface CreateWorkModalProps {
@@ -54,6 +56,7 @@ export const CreateWorkModal: React.FC<CreateWorkModalProps> = ({
   const [videoUrl, setVideoUrl] = useState('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4');
   const [videoDesc, setVideoDesc] = useState('');
   const [duration, setDuration] = useState('03:45');
+  const [videoFileSize, setVideoFileSize] = useState<number | undefined>(undefined);
 
   // File Specific
   const [fileUrl, setFileUrl] = useState('https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf');
@@ -62,6 +65,7 @@ export const CreateWorkModal: React.FC<CreateWorkModalProps> = ({
   const [fileType, setFileType] = useState('zip');
   const [fileDesc, setFileDesc] = useState('');
   const [allowDownload, setAllowDownload] = useState<number>(1);
+  const [selectedResourceFile, setSelectedResourceFile] = useState<File | null>(null);
 
   const isEditMode = !!editData;
 
@@ -210,23 +214,47 @@ export const CreateWorkModal: React.FC<CreateWorkModalProps> = ({
             videoUrl,
             coverImage,
             duration,
+            fileSize: videoFileSize,
             categoryId,
             allowDownload,
             status,
           });
         } else if (workType === 'file') {
-          await filesApi.createFile({
-            title,
-            description: fileDesc,
-            fileUrl,
-            fileName,
-            fileSize,
-            fileType,
-            coverImage,
-            categoryId,
-            allowDownload,
-            status,
-          });
+          if (selectedResourceFile) {
+            const uploadRes = await filesApi.uploadFile({
+              file: selectedResourceFile,
+              categoryId,
+              status,
+              title,
+              description: fileDesc,
+              coverImage,
+              allowDownload,
+            });
+            const fileData = uploadRes?.data || uploadRes;
+            const createdFileId = fileData?.id;
+            if (createdFileId) {
+              await filesApi.updateFile(createdFileId, {
+                title,
+                description: fileDesc,
+                coverImage,
+                allowDownload,
+                categoryId,
+              });
+            }
+          } else {
+            await filesApi.createFile({
+              title,
+              description: fileDesc,
+              fileUrl,
+              fileName,
+              fileSize,
+              fileType,
+              coverImage,
+              categoryId,
+              allowDownload,
+              status,
+            });
+          }
         }
       }
 
@@ -487,6 +515,7 @@ export const CreateWorkModal: React.FC<CreateWorkModalProps> = ({
             onChange={setCoverImage}
             label={`作品封面图 (自动匹配 ${workType === 'article' ? '图文视觉' : workType === 'video' ? '视频秀场' : '资源文件'} 20 张高清图库)`}
             workType={workType}
+            theme="dark"
           />
 
           {/* Type Specific Fields */}
@@ -512,28 +541,25 @@ export const CreateWorkModal: React.FC<CreateWorkModalProps> = ({
 
           {workType === 'video' && (
             <div className="space-y-4 bg-neutral-950 p-4 rounded-xl border border-neutral-800">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">视频流地址 URL</label>
-                  <input
-                    type="url"
-                    required
-                    value={videoUrl}
-                    onChange={(e) => setVideoUrl(e.target.value)}
-                    placeholder="https://domain.com/video.mp4"
-                    className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#0057FF]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">视频时长标记</label>
-                  <input
-                    type="text"
-                    value={duration}
-                    onChange={(e) => setDuration(e.target.value)}
-                    placeholder="例如：04:35"
-                    className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#0057FF]"
-                  />
-                </div>
+              <BehanceVideoPicker
+                value={videoUrl}
+                onChange={setVideoUrl}
+                onDurationChange={(newDuration) => {
+                  if (newDuration) setDuration(newDuration);
+                }}
+                onFileSizeChange={setVideoFileSize}
+                label="动效视频素材上传 / 设置"
+              />
+
+              <div>
+                <label className="block text-xs font-semibold text-neutral-300 mb-1">视频时长标记</label>
+                <input
+                  type="text"
+                  value={duration}
+                  onChange={(e) => setDuration(e.target.value)}
+                  placeholder="例如：04:35（上传本地视频后将自动检测）"
+                  className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#0057FF]"
+                />
               </div>
 
               <div>
@@ -551,24 +577,29 @@ export const CreateWorkModal: React.FC<CreateWorkModalProps> = ({
 
           {workType === 'file' && (
             <div className="space-y-4 bg-neutral-950 p-4 rounded-xl border border-neutral-800">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <BehanceFilePicker
+                fileUrl={fileUrl}
+                onChangeUrl={setFileUrl}
+                fileName={fileName}
+                onChangeFileName={setFileName}
+                fileSize={fileSize}
+                onChangeFileSize={setFileSize}
+                fileType={fileType}
+                onChangeFileType={setFileType}
+                selectedFile={selectedResourceFile}
+                onFileSelected={setSelectedResourceFile}
+                label="设计资源文件上传 / 设置"
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">资源下载链接</label>
-                  <input
-                    type="url"
-                    required
-                    value={fileUrl}
-                    onChange={(e) => setFileUrl(e.target.value)}
-                    className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#0057FF]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">资源文件名</label>
+                  <label className="block text-xs font-semibold text-neutral-300 mb-1">资源显示名称</label>
                   <input
                     type="text"
                     required
                     value={fileName}
                     onChange={(e) => setFileName(e.target.value)}
+                    placeholder="例如：设计资源包_Design_Resource.zip"
                     className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#0057FF]"
                   />
                 </div>
@@ -579,7 +610,7 @@ export const CreateWorkModal: React.FC<CreateWorkModalProps> = ({
                       type="text"
                       value={fileSize}
                       onChange={(e) => setFileSize(e.target.value)}
-                      placeholder="45.2 MB"
+                      placeholder="24.8 MB"
                       className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#0057FF]"
                     />
                     <input

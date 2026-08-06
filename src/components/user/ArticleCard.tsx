@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Eye, ThumbsUp } from 'lucide-react';
 import { Article } from '../../types';
 import { resolveImageUrl } from '../../config/env';
+import { openAuthorModal } from '../common/AuthorProfileModal';
 
 export const ArticleCard: React.FC<{ article: Article }> = ({ article }) => {
 
@@ -38,18 +39,26 @@ export const ArticleCard: React.FC<{ article: Article }> = ({ article }) => {
 
         {/* Author Footer & Stats */}
         <div className="pt-3.5 border-t border-neutral-100 flex items-center justify-between text-sm text-neutral-600">
-          <Link to={`/users/${article.userId}`} className="flex items-center gap-2.5 hover:text-black transition-colors">
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              if (article.userId) {
+                openAuthorModal(article.userId);
+              }
+            }}
+            className="flex items-center gap-2.5 hover:text-black transition-colors cursor-pointer text-left"
+          >
             <img
               src={resolveImageUrl(article.author?.avatar) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'}
               alt={article.author?.nickName || '创作者'}
-              className="w-7 h-7 rounded-full object-cover border border-neutral-200 shadow-xs"
+              className="w-7 h-7 rounded-full object-cover border border-neutral-200 shadow-xs hover:ring-2 hover:ring-[#0057FF] transition-all"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop';
               }}
             />
 
             <span className="font-semibold text-sm text-neutral-800 truncate max-w-[110px]">{article.author?.nickName || '创作者'}</span>
-          </Link>
+          </button>
 
           <div className="flex items-center gap-3 text-xs font-semibold">
             <span className="flex items-center gap-1 text-neutral-500">

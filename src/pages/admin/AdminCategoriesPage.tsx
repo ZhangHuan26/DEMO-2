@@ -292,6 +292,7 @@ export const AdminCategoriesPage: React.FC = () => {
                   onChange={setCatCover}
                   label="分类封面图片"
                   workType={catType}
+                  theme="light"
                 />
               </div>
 

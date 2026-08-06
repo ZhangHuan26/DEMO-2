@@ -10,6 +10,7 @@ interface BehanceImagePickerProps {
   label?: string;
   isAvatar?: boolean;
   workType?: 'article' | 'video' | 'file' | 'avatar';
+  theme?: 'dark' | 'light';
 }
 
 export const BehanceImagePicker: React.FC<BehanceImagePickerProps> = ({
@@ -18,10 +19,14 @@ export const BehanceImagePicker: React.FC<BehanceImagePickerProps> = ({
   label = '选择封面图片',
   isAvatar = false,
   workType = 'article',
+  theme,
 }) => {
   const [activeTab, setActiveTab] = useState<'presets' | 'upload' | 'url'>('presets');
   const [urlInput, setUrlInput] = useState(value);
   const [uploading, setUploading] = useState(false);
+
+  // Determine theme: if explicitly provided use it; otherwise default dark for works (article/video/file), light for avatar
+  const isDark = theme ? theme === 'dark' : (workType === 'article' || workType === 'video' || workType === 'file');
 
   // Combine galleries strictly based on workType / isAvatar
   const getGalleryImages = (): { item: PresetImage; catType: 'article' | 'video' | 'file' | 'avatar' }[] => {
@@ -87,28 +92,44 @@ export const BehanceImagePicker: React.FC<BehanceImagePickerProps> = ({
   };
 
   return (
-    <div className="space-y-3.5 bg-white border border-neutral-200 rounded-2xl p-4 shadow-xs">
+    <div className={`space-y-3.5 rounded-2xl p-4 transition-colors ${
+      isDark
+        ? 'bg-neutral-950/90 border border-neutral-800 text-white shadow-xl'
+        : 'bg-white border border-neutral-200 text-neutral-900 shadow-xs'
+    }`}>
       {/* Header Label */}
       <div className="flex items-center justify-between">
         {label && (
-          <label className="text-xs font-bold text-neutral-800 tracking-wider flex items-center gap-2">
+          <label className={`text-xs font-bold tracking-wider flex items-center gap-2 ${
+            isDark ? 'text-neutral-200' : 'text-neutral-800'
+          }`}>
             <Sparkles className="w-3.5 h-3.5 text-[#0057FF]" />
             {label}
           </label>
         )}
-        <span className="text-[10px] font-mono text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded-full border border-neutral-200">
+        <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+          isDark
+            ? 'text-neutral-400 bg-neutral-900 border-neutral-800'
+            : 'text-neutral-500 bg-neutral-100 border-neutral-200'
+        }`}>
           HD 高精视觉库
         </span>
       </div>
 
       {/* Mode Navigation Tabs */}
-      <div className="grid grid-cols-3 gap-1.5 p-1 bg-neutral-100 border border-neutral-200 rounded-xl text-xs font-medium">
+      <div className={`grid grid-cols-3 gap-1.5 p-1 rounded-xl text-xs font-medium border ${
+        isDark
+          ? 'bg-neutral-900 border-neutral-800'
+          : 'bg-neutral-100 border-neutral-200'
+      }`}>
         <button
           type="button"
           onClick={() => setActiveTab('presets')}
           className={`py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
             activeTab === 'presets'
               ? 'bg-[#0057FF] text-white font-bold shadow-xs'
+              : isDark
+              ? 'text-neutral-400 hover:text-white hover:bg-neutral-800'
               : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200/60'
           }`}
         >
@@ -121,6 +142,8 @@ export const BehanceImagePicker: React.FC<BehanceImagePickerProps> = ({
           className={`py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
             activeTab === 'upload'
               ? 'bg-[#0057FF] text-white font-bold shadow-xs'
+              : isDark
+              ? 'text-neutral-400 hover:text-white hover:bg-neutral-800'
               : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200/60'
           }`}
         >
@@ -133,6 +156,8 @@ export const BehanceImagePicker: React.FC<BehanceImagePickerProps> = ({
           className={`py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
             activeTab === 'url'
               ? 'bg-[#0057FF] text-white font-bold shadow-xs'
+              : isDark
+              ? 'text-neutral-400 hover:text-white hover:bg-neutral-800'
               : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200/60'
           }`}
         >
@@ -143,7 +168,9 @@ export const BehanceImagePicker: React.FC<BehanceImagePickerProps> = ({
 
       {/* Active Selected Image Preview Box */}
       {value && (
-        <div className="relative group w-full h-32 rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200 shadow-inner">
+        <div className={`relative group w-full h-32 rounded-xl overflow-hidden border shadow-inner ${
+          isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-neutral-100 border-neutral-200'
+        }`}>
           <img src={resolveImageUrl(value)} alt="Selected Cover" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
 
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end justify-between p-3">
@@ -167,10 +194,12 @@ export const BehanceImagePicker: React.FC<BehanceImagePickerProps> = ({
       {/* Presets Gallery Mode */}
       {activeTab === 'presets' && (
         <div className="space-y-3 pt-1">
-          {/* Gallery Grid - NO SCROLLBAR */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2.5 p-1.5 bg-neutral-50 rounded-xl border border-neutral-200">
+          {/* Gallery Grid */}
+          <div className={`grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2.5 p-1.5 rounded-xl border ${
+            isDark ? 'bg-neutral-900/80 border-neutral-800' : 'bg-neutral-50 border-neutral-200'
+          }`}>
             {galleryList.length === 0 ? (
-              <div className="col-span-full py-8 text-center text-xs text-neutral-500">
+              <div className={`col-span-full py-8 text-center text-xs ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
                 暂无预设图库素材
               </div>
             ) : (
@@ -184,6 +213,8 @@ export const BehanceImagePicker: React.FC<BehanceImagePickerProps> = ({
                     className={`group relative aspect-[4/3] rounded-lg overflow-hidden border transition-all duration-200 text-left cursor-pointer ${
                       isSelected
                         ? 'border-[#0057FF] ring-2 ring-[#0057FF] shadow-md scale-[0.98]'
+                        : isDark
+                        ? 'border-neutral-800 opacity-90 hover:opacity-100 hover:border-neutral-600 hover:scale-[1.02]'
                         : 'border-neutral-200 opacity-90 hover:opacity-100 hover:border-neutral-400 hover:scale-[1.02]'
                     }`}
                   >
@@ -226,7 +257,9 @@ export const BehanceImagePicker: React.FC<BehanceImagePickerProps> = ({
               })
             )}
           </div>
-          <div className="flex items-center justify-between text-[10px] text-neutral-500 font-mono px-1">
+          <div className={`flex items-center justify-between text-[10px] font-mono px-1 ${
+            isDark ? 'text-neutral-400' : 'text-neutral-500'
+          }`}>
             <span>共 {galleryList.length} 张预设图库素材</span>
             <span>点击图片即可直接选中</span>
           </div>
@@ -235,7 +268,11 @@ export const BehanceImagePicker: React.FC<BehanceImagePickerProps> = ({
 
       {/* Upload Mode */}
       {activeTab === 'upload' && (
-        <div className="border-2 border-dashed border-neutral-300 hover:border-[#0057FF] rounded-xl p-6 text-center transition-all bg-neutral-50 group">
+        <div className={`border-2 border-dashed rounded-xl p-6 text-center transition-all group ${
+          isDark
+            ? 'border-neutral-800 hover:border-[#0057FF] bg-neutral-900'
+            : 'border-neutral-300 hover:border-[#0057FF] bg-neutral-50'
+        }`}>
           <input
             type="file"
             accept="image/*"
@@ -244,13 +281,17 @@ export const BehanceImagePicker: React.FC<BehanceImagePickerProps> = ({
             className="hidden"
           />
           <label htmlFor="file-upload-input" className="cursor-pointer flex flex-col items-center gap-2">
-            <div className="w-10 h-10 rounded-full bg-neutral-200 group-hover:bg-[#0057FF]/10 text-neutral-600 group-hover:text-[#0057FF] flex items-center justify-center transition-colors">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+              isDark
+                ? 'bg-neutral-800 text-neutral-300 group-hover:bg-[#0057FF]/20 group-hover:text-[#0057FF]'
+                : 'bg-neutral-200 text-neutral-600 group-hover:bg-[#0057FF]/10 group-hover:text-[#0057FF]'
+            }`}>
               <Upload className="w-5 h-5" />
             </div>
-            <span className="text-xs text-neutral-800 font-semibold">
+            <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-neutral-800'}`}>
               {uploading ? '正在处理并上传图片...' : '点击或拖拽作品封面文件到此处上传'}
             </span>
-            <span className="text-[10px] text-neutral-500">支持 PNG, JPG, WEBP 格式，最大 10MB</span>
+            <span className={`text-[10px] ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>支持 PNG, JPG, WEBP 格式，最大 10MB</span>
           </label>
         </div>
       )}
@@ -264,7 +305,11 @@ export const BehanceImagePicker: React.FC<BehanceImagePickerProps> = ({
               placeholder="https://images.unsplash.com/photo-..."
               value={urlInput}
               onChange={(e) => setUrlInput(e.target.value)}
-              className="flex-1 bg-neutral-50 border border-neutral-200 rounded-xl px-3.5 py-2 text-xs text-neutral-900 focus:outline-none focus:border-[#0057FF]"
+              className={`flex-1 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#0057FF] ${
+                isDark
+                  ? 'bg-neutral-900 border border-neutral-800 text-white placeholder-neutral-500'
+                  : 'bg-neutral-50 border border-neutral-200 text-neutral-900'
+              }`}
             />
             <button
               type="button"
@@ -274,7 +319,7 @@ export const BehanceImagePicker: React.FC<BehanceImagePickerProps> = ({
               应用 URL
             </button>
           </div>
-          <p className="text-[10px] text-neutral-500">支持直接输入 Unsplash、CDN 或公开图片链接</p>
+          <p className={`text-[10px] ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>支持直接输入 Unsplash、CDN 或公开图片链接</p>
         </div>
       )}
     </div>

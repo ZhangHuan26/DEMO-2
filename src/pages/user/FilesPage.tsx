@@ -20,7 +20,10 @@ export const FilesPage: React.FC = () => {
     try {
       const [cats, fls] = await Promise.all([
         filesApi.getCategories(),
-        filesApi.getFiles({ categoryId: selectedCatId || undefined })
+        filesApi.getFiles({
+          categoryId: selectedCatId || undefined,
+          keyword: searchQuery.trim() || undefined
+        })
       ]);
       setCategories(Array.isArray(cats) ? cats : []);
       setFiles(Array.isArray(fls?.list) ? fls.list : Array.isArray(fls) ? fls : []);
@@ -34,7 +37,7 @@ export const FilesPage: React.FC = () => {
 
   useEffect(() => {
     fetchFiles();
-  }, [selectedCatId]);
+  }, [selectedCatId, searchQuery, sortBy]);
 
   const filteredAndSortedFiles = useMemo(() => {
     let result = [...files];
@@ -71,7 +74,7 @@ export const FilesPage: React.FC = () => {
         allIcon={Download}
       />
 
-      <div className="max-w-[1700px] mx-auto px-4 lg:px-8 py-6 space-y-6">
+      <div className="w-full px-[20px] py-6 space-y-6">
         {/* Toolbar: Search, Sort Filter, and Publish File Button */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-neutral-50/90 p-4 rounded-2xl border border-neutral-200/80">
           {/* Search Box */}

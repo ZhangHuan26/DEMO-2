@@ -48,7 +48,7 @@ export const FeedPage: React.FC = () => {
   const currentList = activeTab === 'article' ? articles : activeTab === 'video' ? videos : files;
 
   return (
-    <div className="max-w-[1700px] mx-auto px-4 lg:px-10 py-8 space-y-6">
+    <div className="w-full px-[20px] py-8 space-y-6">
       <div className="flex items-center gap-2 border-b border-neutral-200 pb-4">
         <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
         <h1 className="text-lg font-bold text-neutral-900">已关注创作者动态</h1>

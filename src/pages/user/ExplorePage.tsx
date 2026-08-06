@@ -10,6 +10,7 @@ import { filesApi } from '../../api/files';
 import { categoriesApi, AllCategoriesData } from '../../api/categories';
 import { Article, Video, FileItem } from '../../types';
 import { resolveImageUrl } from '../../config/env';
+import { openAuthorModal } from '../../components/common/AuthorProfileModal';
 
 
 interface PresetCategory {
@@ -242,8 +243,8 @@ export const ExplorePage: React.FC = () => {
   return (
     <div className="bg-white min-h-screen text-neutral-900 pb-16 font-sans">
       {/* Top Image Category Filter Bar */}
-      <div className="sticky top-[68px] z-30 bg-white/95 backdrop-blur-md border-b border-neutral-200/80 py-3.5 px-4 lg:px-10 shadow-xs">
-        <div className="max-w-[1700px] mx-auto relative group/nav">
+      <div className="sticky top-[68px] z-30 bg-white/95 backdrop-blur-md border-b border-neutral-200/80 py-3.5 px-[20px] shadow-xs">
+        <div className="w-full relative group/nav">
           {/* Left Arrow Button */}
           {showLeftArrow && (
             <button
@@ -324,7 +325,7 @@ export const ExplorePage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-[1700px] mx-auto px-4 lg:px-10 pt-8 space-y-8">
+      <div className="w-full px-[20px] pt-8 space-y-8">
         {/* Banner Section / Personalized Feed Trigger */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 bg-gradient-to-r from-neutral-50 via-blue-50/30 to-neutral-50 border border-neutral-200/80 p-6 sm:p-7 rounded-2xl shadow-xs">
           <div>
@@ -504,17 +505,23 @@ export const ExplorePage: React.FC = () => {
 
                     {/* Author & Metrics Footer */}
                     <div className="pt-3.5 border-t border-neutral-100 flex items-center justify-between text-sm text-neutral-600">
-                      <Link to={`/users/${work.userId}`} className="flex items-center gap-2.5 hover:text-black transition-colors">
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (work.userId) openAuthorModal(work.userId);
+                        }}
+                        className="flex items-center gap-2.5 hover:text-black transition-colors cursor-pointer text-left"
+                      >
                         <img
                           src={resolveImageUrl(work.author?.avatar) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'}
                           alt={work.author?.nickName || '创作者'}
-                          className="w-7 h-7 rounded-full object-cover border border-neutral-200 shadow-xs"
+                          className="w-7 h-7 rounded-full object-cover border border-neutral-200 shadow-xs hover:ring-2 hover:ring-[#0057FF] transition-all"
                         />
 
                         <span className="font-semibold text-sm text-neutral-800 truncate max-w-[110px]">
                           {work.author?.nickName || '创作者'}
                         </span>
-                      </Link>
+                      </button>
 
                       <div className="flex items-center gap-3 text-xs font-semibold">
                         <span className="flex items-center gap-1 text-neutral-500">

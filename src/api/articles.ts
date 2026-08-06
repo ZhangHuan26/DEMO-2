@@ -72,7 +72,36 @@ export const articlesApi = {
     const result = res.data;
     const data = result?.data ?? result;
     const article = data?.article ?? data;
-    return article;
+
+    const authorObj = article?.author || article?.user || article?.creator || data?.author || data?.user;
+    const isFollowing = 
+      authorObj?.isFollowing ??
+      authorObj?.is_following ??
+      authorObj?.isFollowed ??
+      authorObj?.is_followed ??
+      authorObj?.isFollow ??
+      article?.isFollowingAuthor ??
+      article?.is_following_author ??
+      article?.isFollowing ??
+      article?.is_following ??
+      article?.isFollowed ??
+      data?.isFollowing ??
+      data?.is_following ??
+      false;
+
+    const normalizedAuthor = authorObj ? {
+      ...authorObj,
+      isFollowing: Boolean(isFollowing),
+      nickName: authorObj.nickName || authorObj.nickname || authorObj.username || authorObj.name || '创作者',
+      avatar: authorObj.avatar || authorObj.avatarUrl || authorObj.headImg || '',
+    } : undefined;
+
+    return {
+      ...article,
+      author: normalizedAuthor,
+      viewCount: article?.viewCount ?? article?.view_count ?? article?.views ?? article?.readCount ?? article?.viewsCount ?? 0,
+      categoryName: article?.category?.name || article?.categoryName || article?.category_name,
+    };
   },
 
   // 5.4 POST /articles

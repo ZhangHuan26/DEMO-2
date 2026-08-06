@@ -18,9 +18,14 @@ export const VideosPage: React.FC = () => {
   const fetchVideos = async () => {
     setLoading(true);
     try {
+      const apiSort = sortBy === 'popular' ? 'hot' : sortBy === 'latest' ? 'latest' : undefined;
       const [cats, vids] = await Promise.all([
         videosApi.getCategories(),
-        videosApi.getVideos({ categoryId: selectedCatId || undefined })
+        videosApi.getVideos({
+          categoryId: selectedCatId || undefined,
+          keyword: searchQuery.trim() || undefined,
+          sort: apiSort
+        })
       ]);
       setCategories(Array.isArray(cats) ? cats : []);
       setVideos(Array.isArray(vids?.list) ? vids.list : Array.isArray(vids) ? vids : []);
@@ -34,7 +39,7 @@ export const VideosPage: React.FC = () => {
 
   useEffect(() => {
     fetchVideos();
-  }, [selectedCatId]);
+  }, [selectedCatId, searchQuery, sortBy]);
 
   const filteredAndSortedVideos = useMemo(() => {
     let result = [...videos];
@@ -69,7 +74,7 @@ export const VideosPage: React.FC = () => {
         allIcon={Play}
       />
 
-      <div className="max-w-[1700px] mx-auto px-4 lg:px-8 py-6 space-y-6">
+      <div className="w-full px-[20px] py-6 space-y-6">
         {/* Toolbar: Search, Sort Filter, and Publish Video Button */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-neutral-50/90 p-4 rounded-2xl border border-neutral-200/80">
           {/* Search Box */}

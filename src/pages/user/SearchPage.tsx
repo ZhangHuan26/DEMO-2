@@ -41,7 +41,7 @@ export const SearchPage: React.FC = () => {
   }, [query]);
 
   return (
-    <div className="max-w-[1700px] mx-auto px-4 lg:px-10 py-8 space-y-6">
+    <div className="w-full px-[20px] py-8 space-y-6">
       {/* Header */}
       <div className="border-b border-neutral-200 pb-4">
         <h1 className="text-xl font-bold text-neutral-900 flex items-center gap-2">

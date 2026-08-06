@@ -3,7 +3,8 @@ export type UserStatus = 0 | 1; // 0 = Normal, 1 = Frozen
 
 export interface User {
   id: number;
-  email: string;
+  username?: string;
+  email?: string;
   phone?: string;
   nickName: string;
   avatar: string;
@@ -16,6 +17,12 @@ export interface User {
   signature?: string;
   followerCount: number;
   followingCount: number;
+  articleCount?: number;
+  videoCount?: number;
+  fileCount?: number;
+  worksCount?: number;
+  favoriteCount?: number;
+  commentCount?: number;
   workCount?: number;
   createdAt?: string;
   isFollowing?: boolean;
@@ -47,6 +54,7 @@ export interface Article {
   coverImage: string;
   categoryId: number;
   categoryName?: string;
+  category?: Category;
   status: number; // 0: Public, 1: Private
   isHidden: number; // 0: Normal, 1: Hidden by Admin
   allowDownload?: number; // 0: Forbidden, 1: Allowed
@@ -72,6 +80,7 @@ export interface Video {
   duration: string; // e.g., "04:35"
   categoryId: number;
   categoryName?: string;
+  category?: Category;
   status: number; // 0: Public, 1: Private
   isHidden: number; // 0: Normal, 1: Hidden
   allowDownload: number; // 0: Forbidden, 1: Allowed
@@ -98,11 +107,13 @@ export interface FileItem {
   coverImage: string;
   categoryId: number;
   categoryName?: string;
+  category?: Category;
   status: number; // 0: Public, 1: Private
   isHidden: number; // 0: Normal, 1: Hidden
   allowDownload: number; // 0: Forbidden, 1: Allowed
   isPinned?: number; // 0: Normal, 1: Pinned
   downloadCount: number;
+  viewCount?: number;
   likeCount: number;
   favoriteCount: number;
   commentCount: number;
@@ -130,8 +141,8 @@ export interface Comment {
 export interface Notification {
   id: number;
   userId: number;
-  type: 'like' | 'favorite' | 'comment' | 'follow' | 'system' | 'report';
-  title: string;
+  type: any;
+  title?: string;
   content: string;
   isRead: number; // 0: Unread, 1: Read
   targetType?: string;
@@ -202,9 +213,11 @@ export interface Message {
 }
 
 export interface Conversation {
-  peerUser: User;
-  lastMessage: Message;
-  unreadCount: number;
+  id?: number;
+  peerUser?: User;
+  targetUser?: User;
+  lastMessage?: Message;
+  unreadCount?: number;
 }
 
 export interface CreatorStats {

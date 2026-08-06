@@ -1,6 +1,7 @@
 import { apiClient } from './client';
 import { FileItem, Comment, Category } from '../types';
 import { normalizeComment } from '../utils/normalize';
+import { resolveImageUrl } from '../config/env';
 
 export const filesApi = {
   // 8.1 GET /file-categories
@@ -37,18 +38,86 @@ export const filesApi = {
     return res.data;
   },
 
-  // 9.1 POST /files
-  createFile: async (data: { title: string; description?: string; fileUrl: string; fileName: string; fileSize: string; fileType: string; coverImage: string; categoryId: number; allowDownload?: number; status?: number }) => {
-    const res = await apiClient.post('/files', data);
+  // 10.3 POST /files
+  uploadFile: async (params: {
+    file: File | Blob;
+    articleId?: number;
+    categoryId?: number;
+    status?: number;
+    title?: string;
+    description?: string;
+    coverImage?: string;
+    allowDownload?: number;
+  }) => {
+    const formData = new FormData();
+    formData.append('file', params.file);
+    if (params.categoryId !== undefined && params.categoryId !== 0) {
+      formData.append('categoryId', String(params.categoryId));
+    }
+    if (params.articleId !== undefined) {
+      formData.append('articleId', String(params.articleId));
+    }
+    if (params.status !== undefined) {
+      formData.append('status', String(params.status));
+    }
+    if (params.title) {
+      formData.append('title', params.title);
+    }
+    if (params.description) {
+      formData.append('description', params.description);
+    }
+    if (params.coverImage) {
+      formData.append('coverImage', params.coverImage);
+    }
+    if (params.allowDownload !== undefined) {
+      formData.append('allowDownload', String(params.allowDownload));
+    }
+
+    const res = await apiClient.post('/files', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return res.data;
   },
 
-  // 9.2 GET /files
-  getFiles: async (params?: { page?: number; limit?: number; userId?: number; categoryId?: number; search?: string }) => {
+  createFile: async (data: {
+    file?: File | Blob;
+    title?: string;
+    description?: string;
+    fileUrl?: string;
+    fileName?: string;
+    fileSize?: string;
+    fileType?: string;
+    coverImage?: string;
+    categoryId?: number;
+    allowDownload?: number;
+    status?: number;
+    articleId?: number;
+  }) => {
+    if (data.file instanceof File || data.file instanceof Blob) {
+      const formData = new FormData();
+      formData.append('file', data.file);
+      if (data.categoryId) formData.append('categoryId', String(data.categoryId));
+      if (data.articleId) formData.append('articleId', String(data.articleId));
+      if (data.status !== undefined) formData.append('status', String(data.status));
+      const res = await apiClient.post('/files', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return res.data;
+    } else {
+      const res = await apiClient.post('/files', data);
+      return res.data;
+    }
+  },
+
+  // 10.1 GET /files
+  getFiles: async (params?: { page?: number; limit?: number; size?: number; userId?: number; articleId?: number; categoryId?: number; fileType?: number; search?: string; keyword?: string; sort?: string }) => {
     try {
-      const { limit, ...rest } = params || {};
+      const { limit, size, search, keyword, ...rest } = params || {};
       const queryParams: any = { ...rest };
-      if (limit !== undefined) queryParams.size = limit;
+      if (limit !== undefined || size !== undefined) queryParams.size = limit ?? size;
+      if (search || keyword) queryParams.keyword = search || keyword;
       const res = await apiClient.get('/files', { params: queryParams });
       const result = res.data;
       const data = result?.data ?? result;
@@ -75,13 +144,115 @@ export const filesApi = {
   // 9.3 GET /files/{id}
   getFileById: async (id: number): Promise<FileItem> => {
     const res = await apiClient.get(`/files/${id}`);
-    return res.data.file || res.data?.data || res.data;
+    const result = res.data;
+    const data = result?.data ?? result;
+    const file = data?.file ?? data;
+
+    const authorObj = file?.author || file?.user || file?.creator || data?.author || data?.user;
+    const isFollowing = 
+      authorObj?.isFollowing ??
+      authorObj?.is_following ??
+      authorObj?.isFollowed ??
+      authorObj?.is_followed ??
+      authorObj?.isFollow ??
+      file?.isFollowingAuthor ??
+      file?.is_following_author ??
+      file?.isFollowing ??
+      file?.is_following ??
+      file?.isFollowed ??
+      data?.isFollowing ??
+      data?.is_following ??
+      false;
+
+    const normalizedAuthor = authorObj ? {
+      ...authorObj,
+      isFollowing: Boolean(isFollowing),
+      nickName: authorObj.nickName || authorObj.nickname || authorObj.username || authorObj.name || '创作者',
+      avatar: authorObj.avatar || authorObj.avatarUrl || authorObj.headImg || '',
+    } : undefined;
+
+    return {
+      ...file,
+      author: normalizedAuthor,
+      viewCount: file?.viewCount ?? file?.view_count ?? file?.views ?? 0,
+      categoryName: file?.category?.name || file?.categoryName || file?.category_name,
+    };
   },
 
   // 9.4 GET /files/{id}/download
-  downloadFile: async (id: number, currentUserId?: number) => {
-    const res = await apiClient.get(`/files/${id}/download`);
-    return res.data;
+  downloadFile: async (id: number, customFileName?: string) => {
+    const token = localStorage.getItem('token');
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const downloadApiUrl = resolveImageUrl(`/files/${id}/download`);
+
+    try {
+      const response = await fetch(downloadApiUrl, {
+        method: 'GET',
+        headers
+      });
+
+      if (!response.ok) {
+        let errorMsg = '下载资源失败';
+        try {
+          const json = await response.json();
+          errorMsg = json.msg || json.message || errorMsg;
+        } catch {
+          // ignore
+        }
+        throw new Error(errorMsg);
+      }
+
+      // 检查 Content-Type
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const json = await response.json();
+        const rawUrl = json.data?.downloadUrl || json.downloadUrl || json.data?.url || json.url;
+        if (rawUrl) {
+          const realUrl = resolveImageUrl(rawUrl);
+          const a = document.createElement('a');
+          a.href = realUrl;
+          a.target = '_blank';
+          if (customFileName) a.download = customFileName;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          return json;
+        } else if (json.code !== undefined && json.code !== 200 && json.code !== 0) {
+          throw new Error(json.msg || json.message || '下载资源失败');
+        }
+      }
+
+      // 默认处理二进制文件流 (Content-Disposition: attachment)
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+
+      let finalFileName = customFileName || '';
+      if (!finalFileName) {
+        const disposition = response.headers.get('content-disposition');
+        if (disposition && disposition.includes('filename=')) {
+          const match = disposition.match(/filename=["']?([^"';]+)["']?/);
+          if (match && match[1]) {
+            finalFileName = decodeURIComponent(match[1]);
+          }
+        }
+      }
+
+      a.download = finalFileName || `resource_${id}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(blobUrl);
+
+      return { success: true };
+    } catch (error: any) {
+      throw error;
+    }
   },
 
   // 9.4.1 PUT /files/{id}
@@ -132,9 +303,21 @@ export const filesApi = {
     return res.data;
   },
 
+  // 10.1.2 DELETE /files/{id}/like
+  unlikeFile: async (id: number) => {
+    const res = await apiClient.delete(`/files/${id}/like`);
+    return res.data;
+  },
+
   // 10.2 POST /files/{id}/favorite
   favoriteFile: async (id: number) => {
     const res = await apiClient.post(`/files/${id}/favorite`);
+    return res.data;
+  },
+
+  // 10.2.2 DELETE /files/{id}/favorite
+  unfavoriteFile: async (id: number) => {
+    const res = await apiClient.delete(`/files/${id}/favorite`);
     return res.data;
   },
 

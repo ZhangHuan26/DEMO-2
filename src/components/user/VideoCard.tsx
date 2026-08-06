@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Play, Eye, ThumbsUp, Clock } from 'lucide-react';
 import { Video } from '../../types';
 import { resolveImageUrl } from '../../config/env';
+import { openAuthorModal } from '../common/AuthorProfileModal';
 
 export const VideoCard: React.FC<{ video: Video }> = ({ video }) => {
 
@@ -43,18 +44,26 @@ export const VideoCard: React.FC<{ video: Video }> = ({ video }) => {
         </div>
 
         <div className="pt-3 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-500">
-          <Link to={`/users/${video.userId}`} className="flex items-center gap-2 hover:text-black transition-colors">
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              if (video.userId) {
+                openAuthorModal(video.userId);
+              }
+            }}
+            className="flex items-center gap-2 hover:text-black transition-colors cursor-pointer text-left"
+          >
             <img
               src={resolveImageUrl(video.author?.avatar) || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop'}
               alt="创作者"
-              className="w-5 h-5 rounded-full object-cover border border-neutral-200"
+              className="w-5 h-5 rounded-full object-cover border border-neutral-200 hover:ring-2 hover:ring-[#0057FF] transition-all"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop';
               }}
             />
 
             <span className="font-semibold text-xs text-neutral-700 truncate max-w-[100px]">{video.author?.nickName || '动效设计师'}</span>
-          </Link>
+          </button>
 
           <div className="flex items-center gap-3 text-[11px] font-medium">
             <span className="flex items-center gap-1 text-neutral-500">

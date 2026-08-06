@@ -1,111 +1,186 @@
-import React, { useState, useEffect } from 'react';
-import { FileText, Pin, Trash2, Download, Lock, Eye, ThumbsUp } from 'lucide-react';
-import { Article } from '../../types';
-import { adminApi } from '../../api/admin';
+import React, { useEffect, useState } from 'react';
+import { Eye, EyeOff, FileText, Search, ShieldAlert, Trash2 } from 'lucide-react';
 import { articlesApi } from '../../api/articles';
+import { Article } from '../../types';
 
 export const AdminArticlesPage: React.FC = () => {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+  const [hideReason, setHideReason] = useState('');
+  const [showHideModal, setShowHideModal] = useState(false);
 
-  const loadArticles = async () => {
+  const fetchArticles = async () => {
     setLoading(true);
     try {
-      const res = await articlesApi.getArticles();
+      const res = await articlesApi.getAdminArticles({ search: searchTerm });
       setArticles(res.list || []);
-    } catch {
-      setArticles([]);
+    } catch (err) {
+      console.error('Failed to load admin articles:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadArticles();
+    fetchArticles();
   }, []);
 
-  const handleToggleHide = async (a: Article) => {
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchArticles();
+  };
+
+  const handleHideClick = (article: Article) => {
+    setSelectedArticle(article);
+    setHideReason('');
+    setShowHideModal(true);
+  };
+
+  const handleConfirmHide = async () => {
+    if (!selectedArticle) return;
     try {
-      if (a.isHidden === 1) {
-        await adminApi.unhideArticle(a.id, '恢复展示');
-      } else {
-        await adminApi.hideArticle(a.id, '违规内容下架');
-      }
-      setArticles(prev => prev.map(item => item.id === a.id ? { ...item, isHidden: item.isHidden === 1 ? 0 : 1 } : item));
-    } catch {
-      alert('隐藏状态切换失败');
+      await articlesApi.hideArticle(selectedArticle.id, hideReason || '违反社区规范');
+      setShowHideModal(false);
+      fetchArticles();
+    } catch (err) {
+      console.error('Failed to hide article:', err);
     }
   };
 
-  const handleDelete = async (a: Article) => {
-    if (!confirm(`确认要将作品 "${a.title}" 违规下架隔离吗？`)) return;
+  const handleUnhide = async (id: number) => {
     try {
-      await adminApi.deleteArticle(a.id);
-      setArticles(prev => prev.filter(item => item.id !== a.id));
-    } catch {
-      alert('下架操作失败');
+      await articlesApi.unhideArticle(id);
+      fetchArticles();
+    } catch (err) {
+      console.error('Failed to unhide article:', err);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('确认要永久删除这篇文章吗？')) return;
+    try {
+      await articlesApi.deleteArticle(id);
+      fetchArticles();
+    } catch (err) {
+      console.error('Failed to delete article:', err);
     }
   };
 
   return (
-    <div className="space-y-6 max-w-7xl">
-      <div className="border-b border-neutral-200 pb-4">
-        <h1 className="text-2xl font-bold text-neutral-900 flex items-center gap-2">
-          <FileText className="w-6 h-6 text-[#0057FF]" /> 图文作品审查与精选
+    <div className="space-y-6">
+      <div className="flex items-center justify-between border-b border-neutral-200 pb-4">
+        <h1 className="text-xl font-bold text-neutral-900 flex items-center gap-2">
+          <FileText className="w-5 h-5 text-[#0057FF]" />
+          文章作品管理
         </h1>
-        <p className="text-sm text-neutral-500 mt-1">控制作品置顶展示、下载权限开关与违规下架隔离</p>
+        <form onSubmit={handleSearch} className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="搜索文章标题..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 pr-3 py-1.5 bg-neutral-50 border border-neutral-200 rounded-xl text-xs text-neutral-900 focus:outline-none focus:border-[#0057FF]"
+            />
+          </div>
+          <button
+            type="submit"
+            className="px-3 py-1.5 bg-black text-white text-xs font-medium rounded-xl hover:bg-neutral-800 transition-colors cursor-pointer"
+          >
+            搜索
+          </button>
+        </form>
       </div>
 
-      <div className="bg-white border border-neutral-200/90 rounded-2xl overflow-hidden shadow-xs">
-        <table className="w-full text-left text-sm text-neutral-800">
-          <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-600 text-xs font-bold font-mono">
+      <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
+        <table className="w-full text-left text-xs">
+          <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-500 font-semibold uppercase">
             <tr>
-              <th className="px-6 py-3.5">作品 ID</th>
-              <th className="px-6 py-3.5">作品标题与创作者</th>
-              <th className="px-6 py-3.5">所属分类</th>
-              <th className="px-6 py-3.5">可见状态</th>
-              <th className="px-6 py-3.5 text-right">管控操作</th>
+              <th className="py-3 px-4">文章信息</th>
+              <th className="py-3 px-4">作者</th>
+              <th className="py-3 px-4">状态</th>
+              <th className="py-3 px-4">数据（浏览/点赞）</th>
+              <th className="py-3 px-4 text-right">操作</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-200">
+          <tbody className="divide-y divide-neutral-200 text-neutral-700">
             {loading ? (
-              <tr><td colSpan={5} className="px-6 py-8 text-center text-neutral-500">正在加载作品列表...</td></tr>
+              <tr>
+                <td colSpan={5} className="text-center py-8 text-neutral-400">
+                  正在加载文章列表...
+                </td>
+              </tr>
             ) : articles.length === 0 ? (
-              <tr><td colSpan={5} className="px-6 py-8 text-center text-neutral-500">暂无图文作品数据</td></tr>
+              <tr>
+                <td colSpan={5} className="text-center py-8 text-neutral-400">
+                  未找到相关文章记录
+                </td>
+              </tr>
             ) : (
-              articles.map((a, idx) => (
-                <tr key={`art-row-${a.id ?? idx}-${idx}`} className="hover:bg-neutral-50/80 transition-colors">
-                  <td className="px-6 py-4 font-mono text-neutral-500 text-xs">#{a.id}</td>
-                  <td className="px-6 py-4">
+              articles.map((article) => (
+                <tr key={article.id} className="hover:bg-neutral-50/50 transition-colors">
+                  <td className="py-3 px-4">
                     <div className="flex items-center gap-3">
-                      <img src={a.coverImage} alt={a.title} className="w-11 h-11 rounded-lg object-cover border border-neutral-200 shadow-2xs" />
+                      <img
+                        src={article.coverImage || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=200&auto=format&fit=crop'}
+                        alt={article.title}
+                        className="w-12 h-12 rounded-lg object-cover bg-neutral-100 shrink-0"
+                      />
                       <div>
-                        <div className="font-bold text-neutral-900 text-sm line-clamp-1">{a.title}</div>
-                        <div className="text-xs text-neutral-500">作者: {a.author?.nickName || `用户 #${a.userId}`}</div>
+                        <p className="font-bold text-neutral-900 line-clamp-1">{article.title}</p>
+                        <p className="text-[11px] text-neutral-400">{article.createdAt ? new Date(article.createdAt).toLocaleDateString('zh-CN') : ''}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 font-medium text-neutral-700">{a.categoryName || '未分类'}</td>
-                  <td className="px-6 py-4">
-                    {a.isHidden === 1 ? (
-                      <span className="px-2.5 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded-full text-xs font-bold">已隐藏</span>
+                  <td className="py-3 px-4 font-medium">{article.author?.nickName || '未知用户'}</td>
+                  <td className="py-3 px-4">
+                    {article.isHidden === 1 ? (
+                      <span className="px-2 py-0.5 bg-rose-50 text-rose-600 rounded-full font-semibold text-[11px]">
+                        已隐藏
+                      </span>
+                    ) : article.status === 1 ? (
+                      <span className="px-2 py-0.5 bg-amber-50 text-amber-600 rounded-full font-semibold text-[11px]">
+                        私密
+                      </span>
                     ) : (
-                      <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full text-xs font-bold">正常展示</span>
+                      <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full font-semibold text-[11px]">
+                        公开正常
+                      </span>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-right space-x-2">
-                    <button
-                      onClick={() => handleToggleHide(a)}
-                      className="px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-full text-xs font-bold transition-colors cursor-pointer"
-                    >
-                      {a.isHidden === 1 ? '恢复展示' : '隐藏下架'}
-                    </button>
-                    <button
-                      onClick={() => handleDelete(a)}
-                      className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-full text-xs font-bold transition-colors cursor-pointer shadow-2xs"
-                    >
-                      删除作品
-                    </button>
+                  <td className="py-3 px-4 text-neutral-500">
+                    {article.viewCount ?? 0} 次浏览 / {article.likeCount ?? 0} 点赞
+                  </td>
+                  <td className="py-3 px-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      {article.isHidden === 1 ? (
+                        <button
+                          onClick={() => handleUnhide(article.id)}
+                          className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                          title="恢复显示"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleHideClick(article)}
+                          className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
+                          title="隐藏此文章"
+                        >
+                          <EyeOff className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDelete(article.id)}
+                        className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                        title="删除文章"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -113,6 +188,40 @@ export const AdminArticlesPage: React.FC = () => {
           </tbody>
         </table>
       </div>
+
+      {showHideModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full space-y-4 shadow-xl">
+            <h3 className="text-base font-bold text-neutral-900 flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5 text-amber-500" />
+              隐藏违规作品
+            </h3>
+            <p className="text-xs text-neutral-500">
+              请填写对作品《{selectedArticle?.title}》的隐藏处理说明：
+            </p>
+            <textarea
+              value={hideReason}
+              onChange={(e) => setHideReason(e.target.value)}
+              placeholder="请输入隐藏原因..."
+              className="w-full h-24 p-3 border border-neutral-200 rounded-xl text-xs text-neutral-900 focus:outline-none focus:border-[#0057FF]"
+            />
+            <div className="flex items-center justify-end gap-2">
+              <button
+                onClick={() => setShowHideModal(false)}
+                className="px-4 py-2 text-xs text-neutral-600 hover:bg-neutral-100 rounded-xl cursor-pointer"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleConfirmHide}
+                className="px-4 py-2 text-xs bg-rose-600 text-white font-bold rounded-xl hover:bg-rose-700 cursor-pointer"
+              >
+                确认隐藏
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

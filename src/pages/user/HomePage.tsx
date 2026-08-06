@@ -69,7 +69,7 @@ export const HomePage: React.FC = () => {
         allIcon={Star}
       />
 
-      <div className="max-w-[1700px] mx-auto px-4 lg:px-10 py-6 space-y-6">
+      <div className="w-full px-[20px] py-6 space-y-6">
         {/* Toolbar: Search, Sort Filter, and Publish Button */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-neutral-50/90 p-4 rounded-2xl border border-neutral-200/80">
           {/* Search Box */}

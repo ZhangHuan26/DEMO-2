@@ -1,105 +1,124 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { UserPlus, UserCheck, Sparkles } from 'lucide-react';
-import { User } from '../../types';
+import { UserCheck, UserPlus, Users, Sparkles } from 'lucide-react';
 import { authApi } from '../../api/auth';
+import { User } from '../../types';
 import { useAuth } from '../../context/AuthContext';
-import { resolveImageUrl } from '../../config/env';
-
+import { openAuthorModal } from '../../components/common/AuthorProfileModal';
 
 export const CreatorsPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user: currentUser } = useAuth();
   const [creators, setCreators] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [followingMap, setFollowingMap] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
-    const loadCreators = async () => {
+    const fetchCreators = async () => {
       setLoading(true);
       try {
         const list = await authApi.getRecommendedCreators();
-        // GET /users/recommend 登录态下返回的 UserBriefVO 已含 isFollowing 字段，
-        // 无需再逐个发起 getFollowStatus 查询（该接口不存在，会 404）
-        const base = Array.isArray(list) ? list : [];
-        setCreators(base);
-      } catch {
-        setCreators([]);
+        setCreators(list);
+      } catch (err) {
+        console.error('Failed to fetch creators:', err);
       } finally {
         setLoading(false);
       }
     };
-    loadCreators();
-  }, [user]);
+    fetchCreators();
+  }, []);
 
-
-  const handleToggleFollow = async (c: User) => {
+  const handleToggleFollow = async (creatorId: number) => {
+    const isFollowing = !!followingMap[creatorId];
     try {
-      if (c.isFollowing) {
-        await authApi.unfollowUser(c.id);
-        setCreators(prev => prev.map(u => u.id === c.id ? { ...u, isFollowing: false, followerCount: Math.max(0, u.followerCount - 1) } : u));
+      if (isFollowing) {
+        await authApi.unfollowUser(creatorId);
+        setFollowingMap((prev) => ({ ...prev, [creatorId]: false }));
       } else {
-        await authApi.followUser(c.id);
-        setCreators(prev => prev.map(u => u.id === c.id ? { ...u, isFollowing: true, followerCount: u.followerCount + 1 } : u));
+        await authApi.followUser(creatorId);
+        setFollowingMap((prev) => ({ ...prev, [creatorId]: true }));
       }
-    } catch (err: any) {
-      // 关注失败时给出提示，避免静默失败
-      const msg = err?.response?.data?.message || err?.message || '操作失败，请稍后重试';
-      alert(msg);
+    } catch (err) {
+      console.error('Failed to toggle follow:', err);
     }
   };
 
   return (
-    <div className="max-w-[1700px] mx-auto px-4 lg:px-10 py-8 space-y-6">
-      <div className="flex items-center gap-2 border-b border-neutral-200 pb-4">
-        <Sparkles className="w-5 h-5 text-[#0057FF]" />
-        <h1 className="text-lg font-bold text-neutral-900">推荐创作者榜单</h1>
+    <div className="w-full px-[20px] py-8 space-y-8">
+      <div className="flex items-center justify-between border-b border-neutral-200 pb-6">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-neutral-900 flex items-center gap-2">
+            <Sparkles className="w-6 h-6 text-[#0057FF]" />
+            推荐创作者榜单
+          </h1>
+          <p className="text-sm text-neutral-500 mt-1">
+            发现设计界、艺术领域的杰出创作者，关注他们获取灵感
+          </p>
+        </div>
       </div>
 
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-60 bg-neutral-100 rounded-2xl animate-pulse" />
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+            <div key={n} className="bg-white border border-neutral-200 rounded-2xl p-6 space-y-4 animate-pulse">
+              <div className="w-16 h-16 bg-neutral-200 rounded-full mx-auto" />
+              <div className="h-4 bg-neutral-200 rounded w-1/2 mx-auto" />
+              <div className="h-3 bg-neutral-200 rounded w-3/4 mx-auto" />
+            </div>
           ))}
+        </div>
+      ) : creators.length === 0 ? (
+        <div className="text-center py-16 bg-white border border-neutral-200 rounded-2xl p-8 space-y-3">
+          <Users className="w-12 h-12 text-neutral-400 mx-auto" />
+          <p className="text-neutral-600 font-medium">暂无推荐创作者</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {creators.map((c, idx) => (
-            <div key={`creator-${c.id ?? idx}-${idx}`} className="bg-white border border-neutral-200 rounded-2xl p-6 text-center space-y-4 hover:border-neutral-300 hover:shadow-xl transition-all">
-              <Link to={`/users/${c.id}`}>
-                {c.avatar ? (
+          {creators.map((creator) => (
+            <div
+              key={creator.id}
+              className="bg-white border border-neutral-200 hover:border-neutral-300 rounded-2xl p-6 text-center space-y-4 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+            >
+              <div className="space-y-3">
+                <button
+                  onClick={() => openAuthorModal(creator.id)}
+                  className="inline-block group cursor-pointer text-center"
+                >
                   <img
-                    src={resolveImageUrl(c.avatar)}
-                    alt={c.nickName}
-                    className="w-20 h-20 rounded-full object-cover mx-auto border-2 border-[#0057FF]"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop';
-                    }}
+                    src={creator.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'}
+                    alt={creator.nickName}
+                    className="w-20 h-20 rounded-full object-cover mx-auto ring-2 ring-neutral-100 group-hover:scale-105 transition-transform"
                   />
-                ) : (
-
-                  <div className="w-20 h-20 rounded-full mx-auto border-2 border-[#0057FF] bg-[#0057FF]/10 flex items-center justify-center text-[#0057FF] font-bold text-xl">
-                    {(c.nickName || '?').charAt(0).toUpperCase()}
-                  </div>
-                )}
-              </Link>
-              <div>
-                <Link to={`/users/${c.id}`} className="font-bold text-neutral-900 text-sm hover:text-[#0057FF] transition-colors">{c.nickName}</Link>
-                <p className="text-xs text-neutral-600 mt-1 line-clamp-2">{c.signature || '数字艺术家与资深设计师'}</p>
+                  <h3 className="text-base font-bold text-neutral-900 mt-3 group-hover:text-[#0057FF] transition-colors">
+                    {creator.nickName}
+                  </h3>
+                </button>
+                <p className="text-xs text-neutral-500 line-clamp-2 min-h-[32px]">
+                  {creator.signature || '这位创作者很神秘，还没有填写个性签名'}
+                </p>
               </div>
 
-              <div className="flex justify-center gap-4 text-xs font-mono text-neutral-600 py-2 border-y border-neutral-200">
-                <div><span className="font-bold text-neutral-900 block">{Number(c.followerCount) || 0}</span> 粉丝数</div>
-                <div><span className="font-bold text-neutral-900 block">{Number(c.workCount) || 12}</span> 作品数</div>
-              </div>
-
-              <button
-                onClick={() => handleToggleFollow(c)}
-                className={`w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  c.isFollowing ? 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200' : 'bg-[#0057FF] hover:bg-[#0046CC] text-white shadow-lg shadow-[#0057FF]/30'
-                }`}
-              >
-                {c.isFollowing ? <UserCheck className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
-                {c.isFollowing ? '已关注' : '关注创作者'}
-              </button>
+              {currentUser && currentUser.id !== creator.id && (
+                <button
+                  onClick={() => handleToggleFollow(creator.id)}
+                  className={`w-full py-2 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    followingMap[creator.id]
+                      ? 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                      : 'bg-[#0057FF] text-white hover:bg-[#0046CC]'
+                  }`}
+                >
+                  {followingMap[creator.id] ? (
+                    <>
+                      <UserCheck className="w-3.5 h-3.5" />
+                      已关注
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-3.5 h-3.5" />
+                      关注
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           ))}
         </div>

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { User } from '../../types';
 import { resolveImageUrl } from '../../config/env';
+import { openAuthorModal } from './AuthorProfileModal';
 
 interface BehanceDetailShellProps {
   title: string;
@@ -70,170 +71,132 @@ export const BehanceDetailShell: React.FC<BehanceDetailShellProps> = ({
   }, [navigate]);
 
   return (
-    <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/95 backdrop-blur-2xl flex flex-col font-sans text-white selection:bg-[#0057FF] selection:text-white animate-in fade-in duration-200">
-      {/* 1. Top Fixed Black Navigation Header (Modal Header) */}
-      <header className="sticky top-0 z-50 bg-black/90 backdrop-blur-xl border-b border-neutral-800/80 px-4 md:px-6 py-3 flex items-center justify-between shadow-2xl">
-        {/* Left: Author Avatar, Title, Author Name & Follow Button */}
-        <div className="flex items-center gap-3.5 min-w-0">
-          <Link to={`/users/${author?.id}`} className="relative group shrink-0">
-            <img
-              src={resolveImageUrl(author?.avatar) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'}
-              alt={author?.nickName || 'Author'}
-              className="w-10 h-10 rounded-full object-cover border border-neutral-700 group-hover:border-[#0057FF] transition-colors"
-            />
-            {author && !author.isFollowing && !isOwner && (
-              <span className="absolute -bottom-0.5 -right-0.5 bg-[#0057FF] text-white rounded-full p-0.5 shadow-md">
-                <UserPlus className="w-3 h-3" />
-              </span>
-            )}
-          </Link>
+    <div className="fixed inset-0 z-[100] bg-black/95 md:bg-neutral-950 flex flex-col font-sans text-white selection:bg-[#0057FF] selection:text-white animate-in fade-in duration-200">
+      {/* Floating Top-Right Close Button */}
+      <button
+        onClick={() => navigate(-1)}
+        className="fixed top-5 right-5 z-[60] p-2.5 text-neutral-300 hover:text-white bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 rounded-full backdrop-blur-xl transition-all cursor-pointer shadow-2xl group"
+        title="关闭作品弹窗 (Esc)"
+      >
+        <X className="w-5 h-5 group-hover:scale-110 transition-transform" />
+      </button>
 
-          <div className="min-w-0">
-            <h1 className="text-sm sm:text-base font-bold text-white truncate max-w-xs sm:max-w-md md:max-w-lg leading-snug">
-              {title}
-            </h1>
-            <div className="flex items-center gap-2 text-xs text-neutral-400">
-              <Link to={`/users/${author?.id}`} className="hover:text-white font-medium truncate">
-                {author?.nickName || '匿名创作者'}
-              </Link>
-              {author && !isOwner && (
-                <>
-                  <span className="text-neutral-600">•</span>
-                  <button
-                    onClick={onToggleFollow}
-                    className={`text-xs font-bold transition-colors cursor-pointer ${
-                      author.isFollowing ? 'text-neutral-400 hover:text-white' : 'text-[#0057FF] hover:text-blue-400'
-                    }`}
-                  >
-                    {author.isFollowing ? '已关注' : '关注'}
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Right Action Links & Close X Button */}
-        <div className="flex items-center gap-3 shrink-0">
-          {!isOwner && onOpenChat && (
+      {/* Main Scrollable Workspace Container */}
+      <div className="flex-1 overflow-y-auto min-h-0 relative bg-neutral-950">
+        {/* 2. Main Stage Media Display Canvas */}
+        <div className="relative w-full bg-neutral-900/60 min-h-[420px] md:min-h-[520px] flex items-center justify-center py-8 px-4 md:px-16 overflow-hidden border-b border-neutral-800/80">
+          {/* Left Edge Flip Navigation */}
+          {onPrev && (
             <button
-              onClick={onOpenChat}
-              className="hidden sm:inline-flex px-4 py-2 bg-[#0057FF] hover:bg-[#0046CC] text-white text-xs font-bold rounded-full transition-all cursor-pointer shadow-md shadow-[#0057FF]/30"
+              onClick={onPrev}
+              className="absolute left-3 md:left-6 top-1/2 -translate-y-1/2 z-30 flex items-center gap-1.5 px-3.5 py-2.5 bg-neutral-900/90 hover:bg-neutral-800 text-neutral-300 hover:text-white text-xs font-bold rounded-full border border-neutral-800 backdrop-blur-md transition-all cursor-pointer shadow-xl group"
             >
-              聘请创作者
+              <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+              <span className="hidden sm:inline">上一步</span>
             </button>
           )}
 
-          <button
-            onClick={onShare}
-            className="hidden md:inline-flex items-center gap-1.5 px-3.5 py-2 bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white text-xs font-medium rounded-full border border-neutral-800 transition-colors cursor-pointer"
-          >
-            <Share2 className="w-3.5 h-3.5" />
-            <span>分享工作</span>
-          </button>
+          {/* Right Edge Flip Navigation */}
+          {onNext && (
+            <button
+              onClick={onNext}
+              className="absolute right-3 md:right-6 top-1/2 -translate-y-1/2 z-30 flex items-center gap-1.5 px-3.5 py-2.5 bg-neutral-900/90 hover:bg-neutral-800 text-neutral-300 hover:text-white text-xs font-bold rounded-full border border-neutral-800 backdrop-blur-md transition-all cursor-pointer shadow-xl group"
+            >
+              <span className="hidden sm:inline">下一步</span>
+              <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+            </button>
+          )}
 
-          {/* Prominent Close X Modal Button */}
-          <button
-            onClick={() => navigate(-1)}
-            className="p-2 text-neutral-400 hover:text-white bg-neutral-900 hover:bg-neutral-800 rounded-full border border-neutral-800 transition-colors cursor-pointer ml-1"
-            title="关闭弹窗 (Esc)"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          {/* Center Media Showcase (Fixed width, height auto according to ratio, no cropping) */}
+          <div className="max-w-4xl w-full mx-auto flex items-center justify-center relative px-2 sm:px-4">
+            {mediaContent ? (
+              mediaContent
+            ) : coverImage ? (
+              <img
+                src={resolveImageUrl(coverImage)}
+                alt={title}
+                className="w-full h-auto rounded-2xl shadow-2xl border border-neutral-800"
+              />
+            ) : null}
+          </div>
         </div>
-      </header>
 
-      {/* 2. Main Stage Media Display Canvas */}
-      <div className="relative w-full bg-black min-h-[420px] md:min-h-[520px] flex items-center justify-center py-8 px-4 md:px-16 overflow-hidden">
-        {/* Left Edge Flip Navigation */}
-        {onPrev && (
-          <button
-            onClick={onPrev}
-            className="absolute left-3 md:left-6 top-1/2 -translate-y-1/2 z-30 flex items-center gap-1.5 px-3.5 py-2.5 bg-black/70 hover:bg-black/95 text-neutral-300 hover:text-white text-xs font-bold rounded-full border border-neutral-800 backdrop-blur-md transition-all cursor-pointer shadow-2xl group"
-          >
-            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-            <span className="hidden sm:inline">上一步</span>
-          </button>
-        )}
-
-        {/* Right Edge Flip Navigation */}
-        {onNext && (
-          <button
-            onClick={onNext}
-            className="absolute right-3 md:right-6 top-1/2 -translate-y-1/2 z-30 flex items-center gap-1.5 px-3.5 py-2.5 bg-black/70 hover:bg-black/95 text-neutral-300 hover:text-white text-xs font-bold rounded-full border border-neutral-800 backdrop-blur-md transition-all cursor-pointer shadow-2xl group"
-          >
-            <span className="hidden sm:inline">下一步</span>
-            <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-          </button>
-        )}
-
-        {/* Center Media Showcase (Strictly width-aligned with content below) */}
-        <div className="max-w-4xl w-full mx-auto flex items-center justify-center relative px-2 sm:px-4">
-          {mediaContent ? (
-            mediaContent
-          ) : coverImage ? (
-            <img
-              src={resolveImageUrl(coverImage)}
-              alt={title}
-              className="w-full h-auto max-h-[720px] object-cover rounded-2xl shadow-2xl border border-neutral-800/80"
-            />
-          ) : null}
+        {/* Body Content Area Below Stage */}
+        <div className="w-full bg-neutral-950 text-white pb-28">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 space-y-10">
+            {children}
+          </div>
         </div>
       </div>
 
       {/* Floating Bottom Card Bar Fixed Overlaying Page */}
       {showBottomBar && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-2xl w-[92%] bg-neutral-900/95 border border-neutral-800 backdrop-blur-2xl rounded-2xl p-3 px-5 flex items-center justify-between shadow-[0_20px_60px_rgba(0,0,0,0.9)] transition-all">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-2xl w-[94%] bg-neutral-900/90 border border-neutral-800 backdrop-blur-2xl rounded-full p-3 px-6 flex items-center justify-between gap-3 shadow-[0_20px_50px_rgba(0,0,0,0.8)] transition-all">
+          {/* Left: Author Info & Author Actions */}
           <div className="flex items-center gap-3.5 min-w-0">
-            <img
-              src={resolveImageUrl(coverImage || author?.avatar)}
-              alt="Mini Cover"
-              className="w-12 h-12 rounded-xl object-cover border border-neutral-700 shrink-0"
-            />
+            <button
+              onClick={() => author?.id && openAuthorModal(author.id)}
+              className="shrink-0 cursor-pointer"
+            >
+              <img
+                src={resolveImageUrl(author?.avatar || coverImage)}
+                alt={author?.nickName || title}
+                className="w-11 h-11 rounded-full object-cover border border-neutral-700 shrink-0 hover:border-[#0057FF] transition-colors"
+              />
+            </button>
             <div className="min-w-0">
-              <h4 className="text-sm sm:text-base font-bold text-white truncate max-w-xs sm:max-w-sm leading-tight">{title}</h4>
-              <p className="text-xs text-neutral-400 truncate mt-0.5">{author?.nickName || '创作者'}</p>
+              <h4 className="text-sm sm:text-base font-bold text-white truncate max-w-[140px] sm:max-w-xs leading-tight">{title}</h4>
+              <button
+                onClick={() => author?.id && openAuthorModal(author.id)}
+                className="text-xs text-neutral-400 hover:text-white truncate mt-0.5 cursor-pointer text-left block"
+              >
+                {author?.nickName || '创作者'}
+              </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0 ml-2">
-            {author && !isOwner && (
+          {/* Right: Author Action Buttons (关注作者 & 私信作者 & Close) */}
+          <div className="flex items-center gap-2.5 shrink-0 ml-auto">
+            {author && (
               <button
-                onClick={onToggleFollow}
-                className="px-3.5 py-2 bg-white text-black hover:bg-neutral-200 text-xs font-bold rounded-full transition-colors cursor-pointer flex items-center gap-1.5 shadow-md"
+                onClick={() => {
+                  if (isOwner) {
+                    alert('这是您自己发布的作品');
+                  } else if (onToggleFollow) {
+                    onToggleFollow();
+                  }
+                }}
+                className={`px-4 py-2 text-xs md:text-sm font-bold rounded-full transition-all cursor-pointer flex items-center gap-1.5 shadow-md ${
+                  author.isFollowing
+                    ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700'
+                    : 'bg-[#0057FF] hover:bg-blue-600 text-white shadow-[#0057FF]/30'
+                }`}
               >
-                {author.isFollowing ? <Check className="w-3.5 h-3.5" /> : <UserPlus className="w-3.5 h-3.5" />}
-                <span className="hidden sm:inline">{author.isFollowing ? '已关注' : '关注'}</span>
+                {author.isFollowing ? <Check className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+                <span>{author.isFollowing ? '已关注' : '关注作者'}</span>
               </button>
             )}
 
-            <button
-              onClick={onToggleLike}
-              className={`px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                isLiked
-                  ? 'bg-[#0057FF] text-white shadow-lg shadow-[#0057FF]/40'
-                  : 'bg-neutral-800 text-white hover:bg-neutral-700'
-              }`}
-            >
-              <ThumbsUp className="w-3.5 h-3.5 fill-current" />
-              <span>赞 {likeCount > 0 ? likeCount : ''}</span>
-            </button>
+            {author && onOpenChat && (
+              <button
+                onClick={() => {
+                  if (isOwner) {
+                    alert('不能与自己对话');
+                  } else {
+                    onOpenChat();
+                  }
+                }}
+                className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-700 text-xs md:text-sm font-bold rounded-full transition-all cursor-pointer flex items-center gap-1.5 shadow-md"
+              >
+                <MessageSquare className="w-4 h-4 text-[#0057FF]" />
+                <span>私信作者</span>
+              </button>
+            )}
 
-            <button
-              onClick={onToggleFavorite}
-              className={`px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                isFavorited
-                  ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/40'
-                  : 'bg-neutral-800 text-white hover:bg-neutral-700'
-              }`}
-            >
-              <Star className="w-3.5 h-3.5 fill-current" />
-              <span>收藏 {favoriteCount > 0 ? favoriteCount : ''}</span>
-            </button>
-
+            {/* Close Button */}
             <button
               onClick={() => setShowBottomBar(false)}
-              className="text-neutral-400 hover:text-white p-1 rounded-full hover:bg-neutral-800 transition-colors"
+              className="text-neutral-500 hover:text-white p-1.5 rounded-full hover:bg-neutral-800 transition-colors ml-1 cursor-pointer"
               title="关闭浮框"
             >
               <X className="w-4 h-4" />
@@ -242,19 +205,24 @@ export const BehanceDetailShell: React.FC<BehanceDetailShellProps> = ({
         </div>
       )}
 
-      {/* 3. Floating Right Action Sidebar (Vertical Pill with Like, Favorite, Chat, Share, Report) */}
-      <div className="fixed right-3 md:right-8 lg:right-12 xl:right-16 top-1/2 -translate-y-1/2 z-40 bg-neutral-900/95 border border-neutral-800 backdrop-blur-2xl rounded-full py-4 px-2.5 flex flex-col items-center gap-4 text-white shadow-[0_10px_35px_rgba(0,0,0,0.8)]">
+      {/* 3. Floating Right Action Sidebar (Vertical Pill matching screenshot style) */}
+      <div className="fixed right-3 md:right-8 lg:right-12 xl:right-16 top-1/2 -translate-y-1/2 z-50 bg-neutral-900/90 border border-neutral-800 backdrop-blur-2xl rounded-full py-5 px-3 flex flex-col items-center gap-4 text-neutral-200 shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
         {/* Author Avatar with Plus Badge */}
-        <Link to={`/users/${author?.id}`} className="relative group flex flex-col items-center" title="创作者主页">
+        <button
+          onClick={() => author?.id && openAuthorModal(author.id)}
+          className="relative group flex flex-col items-center cursor-pointer"
+          title="查看创作者弹窗"
+        >
           <img
             src={resolveImageUrl(author?.avatar) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'}
             alt={author?.nickName || 'Author'}
-            className="w-12 h-12 rounded-full object-cover border-2 border-neutral-700 group-hover:border-[#0057FF] transition-colors"
+            className="w-12 h-12 rounded-full object-cover border-2 border-neutral-200 group-hover:border-[#0057FF] transition-colors"
           />
           {author && !author.isFollowing && !isOwner && (
             <button
               onClick={(e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 onToggleFollow?.();
               }}
               className="absolute -bottom-1 -right-1 bg-[#0057FF] hover:bg-[#0046CC] text-white rounded-full p-1 shadow-md cursor-pointer"
@@ -265,26 +233,32 @@ export const BehanceDetailShell: React.FC<BehanceDetailShellProps> = ({
           )}
 
           {/* Hover Tooltip */}
-          <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-neutral-900 border border-neutral-700 text-white text-xs font-bold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-2xl z-50">
+          <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-neutral-900 border border-neutral-800 text-white text-xs font-bold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-xl z-50">
             {author?.nickName || '创作者'}
           </div>
-        </Link>
+        </button>
 
         <div className="w-6 h-px bg-neutral-800" />
 
         {/* Message / Chat */}
         {onOpenChat && (
           <button
-            onClick={onOpenChat}
-            className="relative group flex flex-col items-center gap-1 text-neutral-300 hover:text-[#0057FF] transition-colors cursor-pointer"
+            onClick={() => {
+              if (isOwner) {
+                alert('不能与自己对话');
+              } else {
+                onOpenChat();
+              }
+            }}
+            className="relative group flex flex-col items-center gap-1 text-neutral-400 hover:text-[#0057FF] transition-colors cursor-pointer"
           >
-            <div className="w-11 h-11 rounded-full bg-neutral-800 group-hover:bg-[#0057FF]/20 flex items-center justify-center transition-colors">
-              <MessageSquare className="w-5 h-5" />
+            <div className="w-11 h-11 rounded-full bg-neutral-800 group-hover:bg-[#0057FF]/20 flex items-center justify-center transition-colors border border-neutral-700">
+              <MessageSquare className="w-5 h-5 text-neutral-300 group-hover:text-[#0057FF]" />
             </div>
             <span className="text-[10px] text-neutral-400 font-medium group-hover:text-white">私信</span>
 
             {/* Hover Tooltip */}
-            <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-neutral-900 border border-neutral-700 text-white text-xs font-bold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-2xl z-50">
+            <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-neutral-900 border border-neutral-800 text-white text-xs font-bold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-xl z-50">
               发送私信
             </div>
           </button>
@@ -293,15 +267,15 @@ export const BehanceDetailShell: React.FC<BehanceDetailShellProps> = ({
         {/* Share */}
         <button
           onClick={onShare}
-          className="relative group flex flex-col items-center gap-1 text-neutral-300 hover:text-emerald-400 transition-colors cursor-pointer"
+          className="relative group flex flex-col items-center gap-1 text-neutral-400 hover:text-emerald-400 transition-colors cursor-pointer"
         >
-          <div className="w-11 h-11 rounded-full bg-neutral-800 group-hover:bg-emerald-400/20 flex items-center justify-center transition-colors">
-            <Share2 className="w-5 h-5" />
+          <div className="w-11 h-11 rounded-full bg-neutral-800 group-hover:bg-emerald-950/50 flex items-center justify-center transition-colors border border-neutral-700">
+            <Share2 className="w-5 h-5 text-neutral-300 group-hover:text-emerald-400" />
           </div>
           <span className="text-[10px] text-neutral-400 font-medium group-hover:text-white">分享</span>
 
           {/* Hover Tooltip */}
-          <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-neutral-900 border border-neutral-700 text-white text-xs font-bold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-2xl z-50">
+          <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-neutral-900 border border-neutral-800 text-white text-xs font-bold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-xl z-50">
             分享此作品
           </div>
         </button>
@@ -310,70 +284,63 @@ export const BehanceDetailShell: React.FC<BehanceDetailShellProps> = ({
         <button
           onClick={onToggleLike}
           className={`relative group flex flex-col items-center gap-1 transition-all cursor-pointer ${
-            isLiked ? 'text-[#0057FF]' : 'text-neutral-300 hover:text-[#0057FF]'
+            isLiked ? 'text-[#0057FF]' : 'text-neutral-400 hover:text-[#0057FF]'
           }`}
         >
-          <div className={`w-11 h-11 rounded-full flex items-center justify-center shadow-md transition-all ${
+          <div className={`w-11 h-11 rounded-full flex items-center justify-center shadow-md transition-all border border-neutral-700 ${
             isLiked
-              ? 'bg-[#0057FF] text-white shadow-[#0057FF]/40'
-              : 'bg-[#0057FF]/20 text-[#0057FF] group-hover:bg-[#0057FF] group-hover:text-white'
+              ? 'bg-[#0057FF] text-white shadow-[#0057FF]/40 border-[#0057FF]'
+              : 'bg-[#0057FF]/15 text-[#0057FF] group-hover:bg-[#0057FF] group-hover:text-white'
           }`}>
             <ThumbsUp className="w-5 h-5 fill-current" />
           </div>
-          <span className="text-[10px] font-bold text-white">{likeCount}</span>
+          <span className="text-[10px] font-bold text-neutral-300">{likeCount}</span>
 
           {/* Hover Tooltip */}
-          <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-neutral-900 border border-neutral-700 text-white text-xs font-bold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-2xl z-50">
+          <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-neutral-900 border border-neutral-800 text-white text-xs font-bold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-xl z-50">
             {isLiked ? '已赞赏' : '欣赏赞赏'}
           </div>
         </button>
 
-        {/* Favorite Yellow Star Button (Requested by User) */}
+        {/* Favorite Yellow Star Button */}
         <button
           onClick={onToggleFavorite}
           className={`relative group flex flex-col items-center gap-1 transition-all cursor-pointer ${
-            isFavorited ? 'text-amber-400' : 'text-neutral-300 hover:text-amber-400'
+            isFavorited ? 'text-amber-500' : 'text-neutral-400 hover:text-amber-500'
           }`}
         >
-          <div className={`w-11 h-11 rounded-full flex items-center justify-center shadow-md transition-all ${
+          <div className={`w-11 h-11 rounded-full flex items-center justify-center shadow-md transition-all border border-neutral-700 ${
             isFavorited
-              ? 'bg-amber-500 text-white shadow-amber-500/40'
-              : 'bg-amber-500/20 text-amber-400 group-hover:bg-amber-500 group-hover:text-white'
+              ? 'bg-amber-500 text-white shadow-amber-500/40 border-amber-500'
+              : 'bg-amber-500/15 text-amber-500 group-hover:bg-amber-500 group-hover:text-white'
           }`}>
             <Star className="w-5 h-5 fill-current" />
           </div>
-          <span className="text-[10px] font-bold text-white">{favoriteCount}</span>
+          <span className="text-[10px] font-bold text-neutral-300">{favoriteCount}</span>
 
           {/* Hover Tooltip */}
-          <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-neutral-900 border border-neutral-700 text-white text-xs font-bold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-2xl z-50">
+          <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-neutral-900 border border-neutral-800 text-white text-xs font-bold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-xl z-50">
             {isFavorited ? '已收藏' : '收藏作品'}
           </div>
         </button>
 
-        {/* Report (Same size as other icons) */}
+        {/* Report */}
         {onReport && (
           <button
             onClick={onReport}
-            className="relative group flex flex-col items-center gap-1 text-neutral-300 hover:text-rose-400 transition-colors cursor-pointer"
+            className="relative group flex flex-col items-center gap-1 text-neutral-400 hover:text-rose-400 transition-colors cursor-pointer"
           >
-            <div className="w-11 h-11 rounded-full bg-neutral-800 group-hover:bg-rose-500/20 flex items-center justify-center transition-colors">
-              <Flag className="w-5 h-5" />
+            <div className="w-11 h-11 rounded-full bg-neutral-800 group-hover:bg-rose-950/50 flex items-center justify-center transition-colors border border-neutral-700">
+              <Flag className="w-5 h-5 text-neutral-300 group-hover:text-rose-400" />
             </div>
             <span className="text-[10px] text-neutral-400 font-medium group-hover:text-rose-400">举报</span>
 
             {/* Hover Tooltip */}
-            <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-neutral-900 border border-neutral-700 text-white text-xs font-bold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-2xl z-50">
+            <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-neutral-900 border border-neutral-800 text-white text-xs font-bold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-xl z-50">
               举报作品
             </div>
           </button>
         )}
-      </div>
-
-      {/* 4. Body Content Area Below Stage (Matched max-w-4xl width with cover image) */}
-      <div className="w-full bg-neutral-950 text-white border-t border-neutral-800/80">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 space-y-10">
-          {children}
-        </div>
       </div>
     </div>
   );

@@ -85,8 +85,8 @@ export const CategoryImageBar: React.FC<CategoryImageBarProps> = ({
   ];
 
   return (
-    <div className="sticky top-[68px] z-30 bg-white/95 backdrop-blur-md border-b border-neutral-200/80 py-3.5 px-4 lg:px-10 shadow-xs">
-      <div className="max-w-[1700px] mx-auto relative group/nav">
+    <div className="sticky top-[68px] z-30 bg-white/95 backdrop-blur-md border-b border-neutral-200/80 py-3.5 px-[20px] shadow-xs">
+      <div className="w-full relative group/nav">
         {/* Left Arrow */}
         {showLeftArrow && (
           <button

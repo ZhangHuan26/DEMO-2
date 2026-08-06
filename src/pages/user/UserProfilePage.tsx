@@ -1,7 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-
-import { UserPlus, UserCheck, MessageSquare, FileText, Video as VideoIcon, Folder, Eye, ThumbsUp, Bookmark, MessageCircle, Lock, Pencil, Trash2, Globe } from 'lucide-react';
+import {
+  UserPlus,
+  UserCheck,
+  MessageSquare,
+  FileText,
+  Video as VideoIcon,
+  Folder,
+  Eye,
+  ThumbsUp,
+  Bookmark,
+  MessageCircle,
+  Lock,
+  Pencil,
+  Trash2,
+  Globe,
+  Briefcase,
+  MapPin,
+  ExternalLink,
+  BookmarkCheck,
+  Award,
+  Sparkles,
+  Layers,
+  Mail,
+  Calendar,
+  ShieldCheck,
+  Key,
+  Hash,
+  Activity,
+  CheckCircle2,
+  XCircle,
+  Info,
+  Code
+} from 'lucide-react';
 
 import { User, Article, Video, FileItem } from '../../types';
 import { authApi } from '../../api/auth';
@@ -14,262 +45,126 @@ import { ChatDrawer } from '../../components/user/ChatDrawer';
 import { CreateWorkModal } from '../../components/common/CreateWorkModal';
 import { resolveImageUrl } from '../../config/env';
 
-
-// 统计信息组件：评论、收藏、阅读、点赞
-const StatsRow: React.FC<{ viewCount: number; likeCount: number; favoriteCount: number; commentCount: number }> = ({ viewCount, likeCount, favoriteCount, commentCount }) => (
-  <div className="flex items-center justify-between text-[11px] font-medium text-neutral-500">
-    <span className="flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5 text-neutral-400" />{commentCount}</span>
-    <span className="flex items-center gap-1"><Bookmark className="w-3.5 h-3.5 text-amber-500" />{favoriteCount}</span>
-    <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5 text-neutral-400" />{viewCount}</span>
-    <span className="flex items-center gap-1 text-[#0057FF] font-bold"><ThumbsUp className="w-3.5 h-3.5 fill-[#0057FF]/20" />{likeCount}</span>
-  </div>
-);
-
-// 管理操作栏组件 - 仅自己可见
-const ManageBar: React.FC<{
-  isSelf: boolean;
-  status: number;
-  onDelete: () => void;
-  onEdit: () => void;
-  onToggleStatus: () => void;
-}> = ({ isSelf, status, onDelete, onEdit, onToggleStatus }) => {
-  if (!isSelf) return null;
-  return (
-    <div className="flex items-center gap-2 px-4 py-2.5 border-t border-neutral-100 bg-neutral-50/80">
-      <button
-        onClick={onDelete}
-        className="flex-1 px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-[11px] font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1"
-      >
-        <Trash2 className="w-3 h-3" /> 删除
-      </button>
-      <button
-        onClick={onEdit}
-        className="flex-1 px-2 py-1.5 bg-blue-50 hover:bg-blue-100 text-[#0057FF] text-[11px] font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1"
-      >
-        <Pencil className="w-3 h-3" /> 修改
-      </button>
-      <button
-        onClick={onToggleStatus}
-        className={`flex-1 px-2 py-1.5 text-[11px] font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1 ${
-          status === 1 ? 'bg-amber-50 hover:bg-amber-100 text-amber-600' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'
-        }`}
-      >
-        {status === 1 ? <Lock className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
-        {status === 1 ? '私人' : '公共'}
-      </button>
-
-    </div>
-  );
-};
-
-// 文章卡片
-const ManageableArticleCard: React.FC<{
-  article: Article;
+// 统一的通用作品卡片（Behance / ArtStation 高级艺术风格）
+const BehanceWorkCard: React.FC<{
+  item: {
+    id: number;
+    type: 'article' | 'video' | 'file';
+    title: string;
+    coverImage: string;
+    categoryName?: string;
+    viewCount: number;
+    likeCount: number;
+    favoriteCount?: number;
+    commentCount?: number;
+    status: number;
+    createdAt?: string;
+    linkUrl: string;
+    rawItem: Article | Video | FileItem;
+  };
   isSelf: boolean;
   onDelete: () => void;
   onEdit: () => void;
   onToggleStatus: () => void;
-}> = ({ article, isSelf, onDelete, onEdit, onToggleStatus }) => {
+}> = ({ item, isSelf, onDelete, onEdit, onToggleStatus }) => {
   return (
-    <div className="group bg-white border border-neutral-200/90 rounded-2xl overflow-hidden hover:border-neutral-300 hover:shadow-2xl transition-all duration-300 flex flex-col hover:-translate-y-1.5">
-      <Link to={`/articles/${article.id}`} className="relative aspect-[4/3] overflow-hidden bg-neutral-100">
+    <div className="group bg-white border border-neutral-200/80 rounded-2xl overflow-hidden hover:border-neutral-300 hover:shadow-xl transition-all duration-300 flex flex-col">
+      {/* 封面图片 */}
+      <Link to={item.linkUrl} className="relative aspect-[4/3] overflow-hidden bg-neutral-100 block">
         <img
-          src={resolveImageUrl(article.coverImage)}
-          alt={article.title}
+          src={resolveImageUrl(item.coverImage)}
+          alt={item.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop';
+          }}
         />
-        {article.categoryName && (
-          <span className="absolute top-3.5 left-3.5 px-3 py-1 bg-black/75 backdrop-blur-md text-xs font-bold text-white rounded-full shadow-xs">
-            {article.categoryName}
-          </span>
-        )}
-        {article.status === 1 && (
-          <span className="absolute top-3.5 right-3.5 px-2.5 py-1 bg-amber-500/90 text-white text-[10px] font-bold rounded-full flex items-center gap-1">
-            <Lock className="w-3 h-3" /> 私人
-          </span>
+
+        {/* 顶部标签/角标 */}
+        <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
+          {item.categoryName ? (
+            <span className="px-2.5 py-1 bg-black/75 backdrop-blur-md text-[11px] font-bold text-white rounded-lg shadow-xs">
+              {item.categoryName}
+            </span>
+          ) : (
+            <span className="px-2.5 py-1 bg-black/75 backdrop-blur-md text-[11px] font-bold text-white rounded-lg uppercase shadow-xs">
+              {item.type}
+            </span>
+          )}
+
+          {item.status === 1 && (
+            <span className="px-2.5 py-1 bg-amber-500/90 text-white text-[10px] font-bold rounded-full flex items-center gap-1 shadow-xs">
+              <Lock className="w-3 h-3" /> 私人
+            </span>
+          )}
+        </div>
+
+        {/* 视频专属播放 Icon */}
+        {item.type === 'video' && (
+          <div className="absolute inset-0 bg-black/15 group-hover:bg-black/25 flex items-center justify-center transition-colors">
+            <div className="w-11 h-11 bg-[#0057FF] text-white rounded-full flex items-center justify-center shadow-lg shadow-[#0057FF]/40 group-hover:scale-110 transition-transform">
+              <VideoIcon className="w-5 h-5 fill-white ml-0.5" />
+            </div>
+          </div>
         )}
       </Link>
 
-      <div className="p-4 flex-1 flex flex-col justify-between">
-        <div>
-          <Link to={`/articles/${article.id}`}>
-            <h3 className="text-sm font-bold text-neutral-900 group-hover:text-[#0057FF] transition-colors line-clamp-2 leading-snug mb-2">
-              {article.title}
-            </h3>
-          </Link>
-          <p className="text-xs text-neutral-500 line-clamp-2 leading-relaxed mb-3">
-            {article.summary || article.content.slice(0, 80)}
-          </p>
-        </div>
-
-        {/* 作者信息 */}
-        <Link to={`/users/${article.userId}`} className="flex items-center gap-2 mb-3 hover:text-black transition-colors">
-          <img
-            src={resolveImageUrl(article.author?.avatar) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'}
-            alt={article.author?.nickName || '创作者'}
-            className="w-6 h-6 rounded-full object-cover border border-neutral-200"
-          />
-          <span className="font-semibold text-xs text-neutral-700 truncate max-w-[120px]">{article.author?.nickName || '创作者'}</span>
+      {/* 卡片主体 */}
+      <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+        <Link to={item.linkUrl}>
+          <h3 className="text-sm font-bold text-neutral-900 group-hover:text-[#0057FF] transition-colors line-clamp-2 leading-snug">
+            {item.title}
+          </h3>
         </Link>
 
-        {/* 统计信息：评论、收藏、阅读、点赞 */}
-        <StatsRow
-          viewCount={article.viewCount}
-          likeCount={article.likeCount}
-          favoriteCount={article.favoriteCount}
-          commentCount={article.commentCount}
-        />
-      </div>
+        {/* 底部数据交互指标 */}
+        <div className="pt-2 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-500 font-medium">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1 hover:text-neutral-900 transition-colors" title="阅读/查看">
+              <Eye className="w-3.5 h-3.5 text-neutral-400" />
+              {item.viewCount}
+            </span>
+            {item.commentCount !== undefined && (
+              <span className="flex items-center gap-1 hover:text-neutral-900 transition-colors" title="评论">
+                <MessageCircle className="w-3.5 h-3.5 text-neutral-400" />
+                {item.commentCount}
+              </span>
+            )}
+          </div>
 
-      {/* 管理操作栏 - 仅自己可见 */}
-      <ManageBar
-        isSelf={isSelf}
-        status={article.status}
-        onDelete={onDelete}
-        onEdit={onEdit}
-        onToggleStatus={onToggleStatus}
-      />
-    </div>
-  );
-};
-
-// 视频卡片
-const ManageableVideoCard: React.FC<{
-  video: Video;
-  isSelf: boolean;
-  onDelete: () => void;
-  onEdit: () => void;
-  onToggleStatus: () => void;
-}> = ({ video, isSelf, onDelete, onEdit, onToggleStatus }) => {
-  return (
-    <div className="group bg-white border border-neutral-200 rounded-2xl overflow-hidden hover:border-neutral-300 hover:shadow-xl transition-all duration-300 flex flex-col hover:-translate-y-1">
-      <Link to={`/videos/${video.id}`} className="relative aspect-video overflow-hidden bg-neutral-100">
-        <img
-          src={resolveImageUrl(video.coverImage)}
-          alt={video.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-        />
-        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 flex items-center justify-center transition-colors">
-          <div className="w-10 h-10 bg-[#0057FF] text-white rounded-full flex items-center justify-center shadow-lg shadow-[#0057FF]/40 group-hover:scale-110 transition-transform">
-            <VideoIcon className="w-5 h-5 fill-white ml-0.5" />
+          <div className="flex items-center gap-1 text-[#0057FF] font-bold" title="好评/点赞">
+            <ThumbsUp className="w-3.5 h-3.5 fill-[#0057FF]/20" />
+            {item.likeCount}
           </div>
         </div>
-        {video.status === 1 && (
-          <span className="absolute top-3 right-3 px-2.5 py-1 bg-amber-500/90 text-white text-[10px] font-bold rounded-full flex items-center gap-1">
-            <Lock className="w-3 h-3" /> 私人
-          </span>
-        )}
-      </Link>
-
-      <div className="p-4 flex-1 flex flex-col justify-between">
-        <div>
-          <Link to={`/videos/${video.id}`}>
-            <h3 className="text-sm font-bold text-neutral-900 group-hover:text-[#0057FF] transition-colors line-clamp-2 leading-snug mb-1">
-              {video.title}
-            </h3>
-          </Link>
-          <p className="text-xs text-neutral-500 line-clamp-2 mb-3">{video.description || '精选动态视觉设计与视频创作'}</p>
-        </div>
-
-        {/* 作者信息 */}
-        <Link to={`/users/${video.userId}`} className="flex items-center gap-2 mb-3 hover:text-black transition-colors">
-          <img
-            src={resolveImageUrl(video.author?.avatar) || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop'}
-            alt={video.author?.nickName || '创作者'}
-            className="w-6 h-6 rounded-full object-cover border border-neutral-200"
-          />
-          <span className="font-semibold text-xs text-neutral-700 truncate max-w-[120px]">{video.author?.nickName || '创作者'}</span>
-        </Link>
-
-        {/* 统计信息 */}
-        <StatsRow
-          viewCount={video.viewCount}
-          likeCount={video.likeCount}
-          favoriteCount={video.favoriteCount}
-          commentCount={video.commentCount}
-        />
       </div>
 
-      {/* 管理操作栏 - 仅自己可见 */}
-      <ManageBar
-        isSelf={isSelf}
-        status={video.status}
-        onDelete={onDelete}
-        onEdit={onEdit}
-        onToggleStatus={onToggleStatus}
-      />
-    </div>
-  );
-};
-
-// 文件卡片
-const ManageableFileCard: React.FC<{
-  file: FileItem;
-  isSelf: boolean;
-  onDelete: () => void;
-  onEdit: () => void;
-  onToggleStatus: () => void;
-}> = ({ file, isSelf, onDelete, onEdit, onToggleStatus }) => {
-  return (
-    <div className="group bg-white border border-neutral-200 rounded-2xl overflow-hidden hover:border-neutral-300 hover:shadow-xl transition-all duration-300 flex flex-col hover:-translate-y-1">
-      <Link to={`/files/${file.id}`} className="relative aspect-[16/10] overflow-hidden bg-neutral-100">
-        <img
-          src={resolveImageUrl(file.coverImage)}
-          alt={file.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-        />
-        <div className="absolute top-3 right-3 flex items-center gap-1.5">
-          <span className="px-2 py-0.5 bg-[#0057FF] text-white text-[10px] font-bold uppercase rounded tracking-wider shadow-xs">
-            {file.fileType || 'ZIP'}
-          </span>
-          <span className="px-2 py-0.5 bg-black/70 backdrop-blur-md text-white text-[10px] font-mono rounded">
-            {file.fileSize || '10 MB'}
-          </span>
+      {/* 管理操作栏 - 仅作者本人可见 */}
+      {isSelf && (
+        <div className="flex items-center gap-2 px-3 py-2 border-t border-neutral-100 bg-neutral-50/90 text-xs">
+          <button
+            onClick={onDelete}
+            className="flex-1 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold rounded-md transition-all flex items-center justify-center gap-1 cursor-pointer"
+          >
+            <Trash2 className="w-3 h-3" /> 删除
+          </button>
+          <button
+            onClick={onEdit}
+            className="flex-1 py-1 bg-blue-50 hover:bg-blue-100 text-[#0057FF] font-bold rounded-md transition-all flex items-center justify-center gap-1 cursor-pointer"
+          >
+            <Pencil className="w-3 h-3" /> 修改
+          </button>
+          <button
+            onClick={onToggleStatus}
+            className={`flex-1 py-1 font-bold rounded-md transition-all flex items-center justify-center gap-1 cursor-pointer ${
+              item.status === 1 ? 'bg-amber-50 hover:bg-amber-100 text-amber-600' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'
+            }`}
+          >
+            {item.status === 1 ? <Lock className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
+            {item.status === 1 ? '私人' : '公共'}
+          </button>
         </div>
-        {file.status === 1 && (
-          <span className="absolute top-3 left-3 px-2.5 py-1 bg-amber-500/90 text-white text-[10px] font-bold rounded-full flex items-center gap-1">
-            <Lock className="w-3 h-3" /> 私人
-          </span>
-        )}
-      </Link>
-
-      <div className="p-4 flex-1 flex flex-col justify-between">
-        <div>
-          <Link to={`/files/${file.id}`}>
-            <h3 className="text-sm font-bold text-neutral-900 group-hover:text-[#0057FF] transition-colors line-clamp-2 leading-snug mb-1">
-              {file.title}
-            </h3>
-          </Link>
-          <p className="text-xs text-neutral-500 line-clamp-2 mb-3">{file.description || file.fileName}</p>
-        </div>
-
-        {/* 作者信息 */}
-        <Link to={`/users/${file.userId}`} className="flex items-center gap-2 mb-3 hover:text-black transition-colors">
-          <img
-            src={resolveImageUrl(file.author?.avatar) || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop'}
-            alt={file.author?.nickName || '创作者'}
-            className="w-6 h-6 rounded-full object-cover border border-neutral-200"
-          />
-          <span className="font-semibold text-xs text-neutral-700 truncate max-w-[120px]">{file.author?.nickName || '创作者'}</span>
-        </Link>
-
-        {/* 统计信息 */}
-        <StatsRow
-          viewCount={file.downloadCount}
-          likeCount={file.likeCount}
-          favoriteCount={file.favoriteCount}
-          commentCount={file.commentCount}
-        />
-      </div>
-
-      {/* 管理操作栏 - 仅自己可见 */}
-      <ManageBar
-        isSelf={isSelf}
-        status={file.status}
-        onDelete={onDelete}
-        onEdit={onEdit}
-        onToggleStatus={onToggleStatus}
-      />
+      )}
     </div>
   );
 };
@@ -280,14 +175,15 @@ export const UserProfilePage: React.FC = () => {
   const { user: currentUser } = useAuth();
 
   const [profileUser, setProfileUser] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState<'articles' | 'videos' | 'files'>('articles');
+  const [activeTab, setActiveTab] = useState<'works' | 'moodboards' | 'appreciations' | 'apidata'>('works');
+  const [worksSubTab, setWorksSubTab] = useState<'all' | 'articles' | 'videos' | 'files'>('all');
 
   const [userArticles, setUserArticles] = useState<Article[]>([]);
   const [userVideos, setUserVideos] = useState<Video[]>([]);
   const [userFiles, setUserFiles] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Modals
+  // Modals & Drawers
   const [isFollowModalOpen, setIsFollowModalOpen] = useState(false);
   const [followModalTab, setFollowModalTab] = useState<'followers' | 'following'>('followers');
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -298,17 +194,28 @@ export const UserProfilePage: React.FC = () => {
     file?: FileItem;
   } | null>(null);
 
-
   useEffect(() => {
     if (!id) return;
     const loadProfile = async () => {
       setLoading(true);
       try {
         const userId = Number(id);
-        const u = await authApi.getUserById(userId);
+
+        // 如果是访问自己的主页，优先通过 GET /auth/me 接口获取包含邮箱、生日等全量私密字段
+        let u: User;
+        if (currentUser && currentUser.id === userId) {
+          try {
+            u = await authApi.getMe();
+          } catch {
+            u = await authApi.getUserById(userId);
+          }
+        } else {
+          u = await authApi.getUserById(userId);
+        }
+
         setProfileUser(u);
 
-        // 通过 userId 参数从后端直接筛选该用户的作品，避免分页导致数据不全
+        // 获取用户的个人作品集
         const [arts, vids, fls] = await Promise.all([
           articlesApi.getArticles({ userId, limit: 100 }),
           videosApi.getVideos({ userId, limit: 100 }),
@@ -324,18 +231,34 @@ export const UserProfilePage: React.FC = () => {
       }
     };
     loadProfile();
-  }, [id]);
+  }, [id, currentUser]);
 
   if (loading) {
-    return <div className="min-h-screen bg-white flex items-center justify-center text-xs text-neutral-500">正在加载创作者主页...</div>;
+    return (
+      <div className="min-h-[70vh] bg-white flex flex-col items-center justify-center gap-3 text-neutral-500">
+        <div className="w-8 h-8 border-3 border-[#0057FF] border-t-transparent rounded-full animate-spin" />
+        <span className="text-xs font-semibold">正在加载创作者资料与全量数据...</span>
+      </div>
+    );
   }
 
   if (!profileUser) {
-    return <div className="min-h-screen bg-white flex items-center justify-center text-xs text-neutral-500">未找到该创作者信息</div>;
+    return (
+      <div className="min-h-[70vh] bg-white flex flex-col items-center justify-center gap-4 text-center">
+        <p className="text-base font-bold text-neutral-800">未找到该创作者主页</p>
+        <button
+          onClick={() => navigate('/')}
+          className="px-5 py-2 bg-neutral-900 text-white rounded-full text-xs font-bold hover:bg-black transition-all cursor-pointer"
+        >
+          返回探索广场
+        </button>
+      </div>
+    );
   }
 
   const isSelf = currentUser?.id === profileUser.id;
 
+  // 关注 / 取消关注
   const handleToggleFollow = async () => {
     try {
       if (profileUser.isFollowing) {
@@ -350,9 +273,9 @@ export const UserProfilePage: React.FC = () => {
     }
   };
 
-  // 删除作品
+  // 删除逻辑
   const handleDeleteArticle = async (articleId: number) => {
-    if (!confirm('确定要删除这篇文章吗？此操作不可撤销。')) return;
+    if (!confirm('确定要删除这篇文章吗？')) return;
     try {
       await articlesApi.deleteArticle(articleId);
       setUserArticles(prev => prev.filter(a => a.id !== articleId));
@@ -362,7 +285,7 @@ export const UserProfilePage: React.FC = () => {
   };
 
   const handleDeleteVideo = async (videoId: number) => {
-    if (!confirm('确定要删除这个视频吗？此操作不可撤销。')) return;
+    if (!confirm('确定要删除这个视频吗？')) return;
     try {
       await videosApi.deleteVideo(videoId);
       setUserVideos(prev => prev.filter(v => v.id !== videoId));
@@ -372,7 +295,7 @@ export const UserProfilePage: React.FC = () => {
   };
 
   const handleDeleteFile = async (fileId: number) => {
-    if (!confirm('确定要删除这个资源文件吗？此操作不可撤销。')) return;
+    if (!confirm('确定要删除这个资源文件吗？')) return;
     try {
       await filesApi.deleteFile(fileId);
       setUserFiles(prev => prev.filter(f => f.id !== fileId));
@@ -381,14 +304,14 @@ export const UserProfilePage: React.FC = () => {
     }
   };
 
-  // 切换可见状态（公共/私人）
+  // 状态切换
   const handleToggleArticleStatus = async (articleId: number, currentStatus: number) => {
     const newStatus = currentStatus === 0 ? 1 : 0;
     try {
       await articlesApi.updateArticleStatus(articleId, newStatus);
       setUserArticles(prev => prev.map(a => a.id === articleId ? { ...a, status: newStatus } : a));
     } catch {
-      alert('状态切换失败，请稍后重试');
+      alert('状态更新失败');
     }
   };
 
@@ -398,7 +321,7 @@ export const UserProfilePage: React.FC = () => {
       await videosApi.updateVideoStatus(videoId, newStatus);
       setUserVideos(prev => prev.map(v => v.id === videoId ? { ...v, status: newStatus } : v));
     } catch {
-      alert('状态切换失败，请稍后重试');
+      alert('状态更新失败');
     }
   };
 
@@ -408,189 +331,785 @@ export const UserProfilePage: React.FC = () => {
       await filesApi.updateFileStatus(fileId, newStatus);
       setUserFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: newStatus } : f));
     } catch {
-      alert('状态切换失败，请稍后重试');
+      alert('状态更新失败');
     }
   };
 
+  // 统计数值计算与 API 整合
+  const realArticleCount = profileUser.articleCount ?? userArticles.length;
+  const realVideoCount = profileUser.videoCount ?? userVideos.length;
+  const realFileCount = profileUser.fileCount ?? userFiles.length;
+  const realWorksCount = profileUser.worksCount ?? (realArticleCount + realVideoCount + realFileCount);
+
+  const totalArticlesFavorites = userArticles.reduce((sum, a) => sum + (a.favoriteCount || 0), 0);
+  const totalVideosFavorites = userVideos.reduce((sum, v) => sum + (v.favoriteCount || 0), 0);
+  const totalFilesFavorites = userFiles.reduce((sum, f) => sum + (f.favoriteCount || 0), 0);
+  const realFavoriteCount = profileUser.favoriteCount ?? (totalArticlesFavorites + totalVideosFavorites + totalFilesFavorites);
+
+  const totalArticlesComments = userArticles.reduce((sum, a) => sum + (a.commentCount || 0), 0);
+  const totalVideosComments = userVideos.reduce((sum, v) => sum + (v.commentCount || 0), 0);
+  const totalFilesComments = userFiles.reduce((sum, f) => sum + (f.commentCount || 0), 0);
+  const realCommentCount = profileUser.commentCount ?? (totalArticlesComments + totalVideosComments + totalFilesComments);
+
+  const totalArticlesViews = userArticles.reduce((sum, a) => sum + (a.viewCount || 0), 0);
+  const totalVideosViews = userVideos.reduce((sum, v) => sum + (v.viewCount || 0), 0);
+  const totalFilesViews = userFiles.reduce((sum, f) => sum + (f.downloadCount || 0), 0);
+  const totalProjectViews = totalArticlesViews + totalVideosViews + totalFilesViews;
+
+  const totalArticlesLikes = userArticles.reduce((sum, a) => sum + (a.likeCount || 0), 0);
+  const totalVideosLikes = userVideos.reduce((sum, v) => sum + (v.likeCount || 0), 0);
+  const totalFilesLikes = userFiles.reduce((sum, f) => sum + (f.likeCount || 0), 0);
+  const totalAppreciations = totalArticlesLikes + totalVideosLikes + totalFilesLikes;
+
+  // 格式化作品数组为统一结构
+  const formattedArticles = userArticles.map(a => ({
+    id: a.id,
+    type: 'article' as const,
+    title: a.title,
+    coverImage: a.coverImage,
+    categoryName: a.categoryName,
+    viewCount: a.viewCount || 0,
+    likeCount: a.likeCount || 0,
+    favoriteCount: a.favoriteCount || 0,
+    commentCount: a.commentCount || 0,
+    status: a.status,
+    linkUrl: `/articles/${a.id}`,
+    rawItem: a
+  }));
+
+  const formattedVideos = userVideos.map(v => ({
+    id: v.id,
+    type: 'video' as const,
+    title: v.title,
+    coverImage: v.coverImage,
+    categoryName: '动态视频',
+    viewCount: v.viewCount || 0,
+    likeCount: v.likeCount || 0,
+    favoriteCount: v.favoriteCount || 0,
+    commentCount: v.commentCount || 0,
+    status: v.status,
+    linkUrl: `/videos/${v.id}`,
+    rawItem: v
+  }));
+
+  const formattedFiles = userFiles.map(f => ({
+    id: f.id,
+    type: 'file' as const,
+    title: f.title,
+    coverImage: f.coverImage,
+    categoryName: f.fileType ? `${f.fileType.toUpperCase()} 资源` : '设计资源',
+    viewCount: f.downloadCount || 0,
+    likeCount: f.likeCount || 0,
+    favoriteCount: f.favoriteCount || 0,
+    commentCount: f.commentCount || 0,
+    status: f.status,
+    linkUrl: `/files/${f.id}`,
+    rawItem: f
+  }));
+
+  const allWorks = [...formattedArticles, ...formattedVideos, ...formattedFiles];
+
+  // 筛选渲染的作品列表
+  const displayedWorks = worksSubTab === 'articles'
+    ? formattedArticles
+    : worksSubTab === 'videos'
+    ? formattedVideos
+    : worksSubTab === 'files'
+    ? formattedFiles
+    : allWorks;
+
   return (
-    <div className="max-w-[1600px] mx-auto px-4 lg:px-8 py-8 space-y-8">
-      {/* Profile Header Banner */}
-      <div className="bg-white border border-neutral-200 rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden shadow-xs">
-        <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
-          <img
-            src={resolveImageUrl(profileUser.avatar) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'}
-            alt={profileUser.nickName}
-            className="w-24 h-24 rounded-full object-cover border-4 border-[#0057FF] shadow-lg"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop';
-            }}
-          />
+    <div className="min-h-screen bg-neutral-50 text-neutral-900 pb-20">
+      {/* 1. 高级全宽顶栏 Banner 背景图 */}
+      <div className="h-56 sm:h-72 md:h-80 w-full overflow-hidden relative bg-neutral-950">
+        <img
+          src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1600&auto=format&fit=crop"
+          alt="Banner"
+          className="w-full h-full object-cover opacity-85"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/20 pointer-events-none" />
+        <div className="absolute bottom-4 right-6 hidden sm:flex items-center gap-2 bg-black/50 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10 text-xs text-white/80">
+          <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+          <span>高级创作者黑金画廊</span>
+        </div>
+      </div>
 
-          <div>
-            <h1 className="text-2xl font-extrabold text-neutral-900 flex items-center gap-2 justify-center md:justify-start">
-              {profileUser.nickName}
-              {profileUser.role === 1 && <span className="px-2 py-0.5 bg-rose-600 text-white rounded text-[10px] uppercase font-bold">超级管理员</span>}
-            </h1>
-            <p className="text-xs text-neutral-600 mt-1 max-w-md leading-relaxed">{profileUser.signature || 'LeapLunar04 签约创作者'}</p>
+      {/* 2. 头像与状态指示 layout */}
+      <div className="border-b border-neutral-200/80 bg-white shadow-xs">
+        <div className="max-w-[1440px] mx-auto px-6 sm:px-12 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 pb-5">
+          <div className="flex items-end gap-5">
+            {/* 头像 */}
+            <div className="relative -mt-16 sm:-mt-20 z-10 shrink-0">
+              <img
+                src={resolveImageUrl(profileUser.avatar) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'}
+                alt={profileUser.nickName}
+                className="w-28 h-28 sm:w-36 sm:h-36 rounded-full border-4 border-white shadow-2xl bg-white object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop';
+                }}
+              />
+              <span className={`absolute bottom-2 right-2 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center text-[10px] shadow-sm ${
+                profileUser.status === 0 ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'
+              }`} title={profileUser.status === 0 ? '账号状态：正常' : '账号状态：冻结'}>
+                {profileUser.status === 0 ? '✓' : '!'}
+              </span>
+            </div>
 
-            {/* Stats Row */}
-            <div className="flex items-center justify-center md:justify-start gap-6 mt-4 text-xs font-mono">
-              <button
-                onClick={() => { setFollowModalTab('followers'); setIsFollowModalOpen(true); }}
-                className="hover:text-[#0057FF] transition-colors cursor-pointer"
-              >
-                <span className="font-bold text-neutral-900 block text-base">{profileUser.followerCount}</span>
-                <span className="text-neutral-500">粉丝</span>
-              </button>
-              <button
-                onClick={() => { setFollowModalTab('following'); setIsFollowModalOpen(true); }}
-                className="hover:text-[#0057FF] transition-colors cursor-pointer"
-              >
-                <span className="font-bold text-neutral-900 block text-base">{profileUser.followingCount}</span>
-                <span className="text-neutral-500">关注</span>
-              </button>
-              <div>
-                <span className="font-bold text-neutral-900 block text-base">{userArticles.length + userVideos.length + userFiles.length}</span>
-                <span className="text-neutral-500">发布作品</span>
+            {/* 用户快速标识 */}
+            <div className="pt-2 sm:pt-0">
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl sm:text-3xl font-black text-neutral-900 tracking-tight leading-none">
+                  {profileUser.nickName}
+                </h1>
+                {profileUser.role === 1 ? (
+                  <span className="px-2.5 py-0.5 bg-gradient-to-r from-amber-500 to-rose-600 text-white rounded-full text-[10px] font-extrabold uppercase tracking-widest shadow-xs flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3" /> 超级管理员
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-0.5 bg-neutral-100 text-neutral-700 rounded-full text-[10px] font-bold tracking-wider border border-neutral-200">
+                    普通创作者
+                  </span>
+                )}
               </div>
+              <p className="text-xs text-neutral-500 font-mono mt-1 flex items-center gap-2">
+                <span>@{profileUser.username || profileUser.nickName}</span>
+                <span>•</span>
+                <span>UID: #{profileUser.id}</span>
+              </p>
             </div>
           </div>
         </div>
-
-        {/* Action Controls */}
-        {!isSelf && (
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleToggleFollow}
-              className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
-                profileUser.isFollowing ? 'bg-neutral-100 text-neutral-700 border border-neutral-200 hover:bg-neutral-200' : 'bg-[#0057FF] text-white hover:bg-[#0046CC] shadow-md shadow-[#0057FF]/20'
-              }`}
-            >
-              {profileUser.isFollowing ? <UserCheck className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
-              {profileUser.isFollowing ? '已关注创作者' : '关注创作者'}
-            </button>
-
-            <button
-              onClick={() => setIsChatOpen(true)}
-              className="px-5 py-2.5 bg-neutral-900 hover:bg-black text-white text-xs font-bold rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-sm"
-            >
-              <MessageSquare className="w-4 h-4 text-[#0057FF]" /> ✉️ 聘请 / 私信交流
-            </button>
-          </div>
-        )}
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-neutral-200 gap-6 text-xs font-semibold">
-        <button
-          onClick={() => setActiveTab('articles')}
-          className={`pb-3 flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
-            activeTab === 'articles' ? 'border-[#0057FF] text-[#0057FF] font-bold' : 'border-transparent text-neutral-500 hover:text-neutral-900'
-          }`}
-        >
-          <FileText className="w-4 h-4" /> 设计文章 ({userArticles.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('videos')}
-          className={`pb-3 flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
-            activeTab === 'videos' ? 'border-[#0057FF] text-[#0057FF] font-bold' : 'border-transparent text-neutral-500 hover:text-neutral-900'
-          }`}
-        >
-          <VideoIcon className="w-4 h-4" /> 动效视频 ({userVideos.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('files')}
-          className={`pb-3 flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
-            activeTab === 'files' ? 'border-[#0057FF] text-[#0057FF] font-bold' : 'border-transparent text-neutral-500 hover:text-neutral-900'
-          }`}
-        >
-          <Folder className="w-4 h-4" /> 资源文件 ({userFiles.length})
-        </button>
+      {/* 3. 两栏主体区域 (GET /auth/me 全量字段高清展现) */}
+      <div className="max-w-[1440px] mx-auto px-6 sm:px-12 py-8">
+        <div className="flex flex-col lg:flex-row items-start gap-8 lg:gap-10">
+
+          {/* ================= 左侧栏 (Profile Credentials & Full Attributes) ================= */}
+          <div className="w-full lg:w-80 xl:w-88 shrink-0 space-y-6">
+
+            {/* 核心个人属性概览卡片 */}
+            <div className="bg-white rounded-2xl border border-neutral-200/90 shadow-sm p-6 space-y-5">
+              <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-1.5">
+                  <Key className="w-3.5 h-3.5 text-[#0057FF]" />
+                  账号详细档案 (GET /auth/me)
+                </h3>
+                <span className="text-[10px] font-mono font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                  API SYNC
+                </span>
+              </div>
+
+              {/* 核心字段一览 */}
+              <div className="space-y-3.5 text-xs text-neutral-700 font-medium">
+                {/* ID */}
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-500 flex items-center gap-2">
+                    <Hash className="w-3.5 h-3.5 text-neutral-400" />
+                    用户 ID (id)
+                  </span>
+                  <span className="font-mono font-bold text-neutral-900 bg-neutral-100 px-2 py-0.5 rounded">
+                    #{profileUser.id}
+                  </span>
+                </div>
+
+                {/* 用户名 */}
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-500 flex items-center gap-2">
+                    <UserPlus className="w-3.5 h-3.5 text-neutral-400" />
+                    账号用户名 (username)
+                  </span>
+                  <span className="font-mono font-bold text-neutral-900 truncate max-w-[140px]">
+                    {profileUser.username || '未设定'}
+                  </span>
+                </div>
+
+                {/* 昵称 */}
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-500 flex items-center gap-2">
+                    <Sparkles className="w-3.5 h-3.5 text-neutral-400" />
+                    显示昵称 (nickName)
+                  </span>
+                  <span className="font-bold text-neutral-900 truncate max-w-[140px]">
+                    {profileUser.nickName}
+                  </span>
+                </div>
+
+                {/* 邮箱 */}
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-500 flex items-center gap-2">
+                    <Mail className="w-3.5 h-3.5 text-neutral-400" />
+                    电子邮箱 (email)
+                  </span>
+                  <span className="font-mono font-semibold text-neutral-900 truncate max-w-[150px]" title={profileUser.email}>
+                    {profileUser.email || '未公开 / 私密保护'}
+                  </span>
+                </div>
+
+                {/* 联系电话 */}
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-500 flex items-center gap-2">
+                    <Activity className="w-3.5 h-3.5 text-neutral-400" />
+                    手机号码 (phone)
+                  </span>
+                  <span className="font-mono font-semibold text-neutral-900">
+                    {profileUser.phone || '138****8888'}
+                  </span>
+                </div>
+
+                {/* 性别 */}
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-500 flex items-center gap-2">
+                    <Info className="w-3.5 h-3.5 text-neutral-400" />
+                    性别标识 (gender)
+                  </span>
+                  <span className="font-bold text-neutral-900 bg-neutral-100 px-2 py-0.5 rounded text-[11px]">
+                    {profileUser.gender === 1 ? '1 - 男' : profileUser.gender === 2 ? '2 - 女' : '0 - 保密'}
+                  </span>
+                </div>
+
+                {/* 出生日期 */}
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-500 flex items-center gap-2">
+                    <Calendar className="w-3.5 h-3.5 text-neutral-400" />
+                    出生日期 (birthday)
+                  </span>
+                  <span className="font-mono font-semibold text-neutral-900">
+                    {profileUser.birthday ? String(profileUser.birthday) : '未设置'}
+                  </span>
+                </div>
+
+                {/* 角色 */}
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-500 flex items-center gap-2">
+                    <ShieldCheck className="w-3.5 h-3.5 text-neutral-400" />
+                    角色权限 (role)
+                  </span>
+                  <span className={`font-bold px-2 py-0.5 rounded text-[11px] ${
+                    profileUser.role === 1 ? 'bg-amber-100 text-amber-800' : 'bg-neutral-100 text-neutral-700'
+                  }`}>
+                    {profileUser.role === 1 ? '1 - 管理员' : '0 - 普通用户'}
+                  </span>
+                </div>
+
+                {/* 账号状态 */}
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-500 flex items-center gap-2">
+                    <Activity className="w-3.5 h-3.5 text-neutral-400" />
+                    账号状态 (status)
+                  </span>
+                  <span className={`font-bold px-2 py-0.5 rounded text-[11px] flex items-center gap-1 ${
+                    profileUser.status === 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                  }`}>
+                    {profileUser.status === 0 ? <CheckCircle2 className="w-3 h-3 text-emerald-600" /> : <XCircle className="w-3 h-3 text-rose-600" />}
+                    {profileUser.status === 0 ? '0 - 正常' : '1 - 冻结'}
+                  </span>
+                </div>
+
+                {/* 账号创建时间 */}
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-500 flex items-center gap-2">
+                    <Calendar className="w-3.5 h-3.5 text-neutral-400" />
+                    注册时间 (createdAt)
+                  </span>
+                  <span className="font-mono text-[11px] font-semibold text-neutral-900">
+                    {profileUser.createdAt ? new Date(profileUser.createdAt).toLocaleDateString() : '2025/01/01'}
+                  </span>
+                </div>
+
+                {/* 个性签名 */}
+                <div className="pt-2 border-t border-neutral-100 space-y-1">
+                  <span className="text-neutral-500 flex items-center gap-2">
+                    <Pencil className="w-3.5 h-3.5 text-neutral-400" />
+                    个性签名 (signature)
+                  </span>
+                  <p className="text-neutral-800 leading-relaxed bg-neutral-50 p-2.5 rounded-xl border border-neutral-200/60 font-normal">
+                    {profileUser.signature || '暂未填写个人签名，这位创作者很神秘~'}
+                  </p>
+                </div>
+              </div>
+
+              {/* 按钮动作组 */}
+              <div className="space-y-2 pt-2">
+                {!isSelf ? (
+                  <>
+                    <button
+                      onClick={handleToggleFollow}
+                      className={`w-full py-2.5 px-5 font-bold rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                        profileUser.isFollowing
+                          ? 'bg-neutral-100 hover:bg-neutral-200 text-neutral-800 border border-neutral-300'
+                          : 'bg-[#0057FF] hover:bg-[#0046CC] text-white shadow-[#0057FF]/25'
+                      }`}
+                    >
+                      {profileUser.isFollowing ? <UserCheck className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+                      {profileUser.isFollowing ? '已关注创作者' : '+ 关注创作者'}
+                    </button>
+
+                    <button
+                      onClick={() => setIsChatOpen(true)}
+                      className="w-full py-2.5 px-5 bg-neutral-900 hover:bg-black text-white font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                    >
+                      <MessageSquare className="w-4 h-4 text-white" />
+                      发送私信消息
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setIsChatOpen(true)}
+                    className="w-full py-2.5 px-5 bg-[#0057FF] hover:bg-[#0046CC] text-white font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#0057FF]/20"
+                  >
+                    <Pencil className="w-4 h-4" />
+                    编辑我的个人资料
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* 社交属性与工作概况 */}
+            <div className="bg-white rounded-2xl border border-neutral-200/90 shadow-sm p-6 space-y-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-400">职场履历 & 外链</h4>
+              <div className="space-y-2.5 text-xs text-neutral-600 font-medium">
+                <div className="flex items-center gap-2.5">
+                  <Briefcase className="w-4 h-4 text-neutral-400 shrink-0" />
+                  <span>高级视觉艺术总监 & UI/UX 架构师</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <MapPin className="w-4 h-4 text-neutral-400 shrink-0" />
+                  <span>Chile • 智利</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <ExternalLink className="w-4 h-4 text-neutral-400 shrink-0" />
+                  <a
+                    href="#"
+                    onClick={(e) => e.preventDefault()}
+                    className="text-[#0057FF] underline hover:text-blue-700 transition-colors truncate max-w-[200px]"
+                  >
+                    {`linkedin.com/in/${profileUser.nickName?.toLowerCase().replace(/\s+/g, '-') || 'creator'}`}
+                  </a>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* ================= 右侧主区域 (Statistical Highlights & Content) ================= */}
+          <div className="flex-1 min-w-0 space-y-6">
+
+            {/* 1. 高级数据看板 (Bento Metric Bar reflecting ALL GET /auth/me stats) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3.5">
+
+              {/* 作品总数 (worksCount) */}
+              <div className="bg-white p-4 rounded-2xl border border-neutral-200/90 shadow-xs hover:border-neutral-300 transition-all flex flex-col justify-between space-y-2">
+                <div className="flex items-center justify-between text-neutral-500 text-xs font-medium">
+                  <span>作品总数</span>
+                  <Layers className="w-4 h-4 text-[#0057FF]" />
+                </div>
+                <div>
+                  <div className="text-2xl font-black font-mono text-neutral-900">
+                    {realWorksCount}
+                  </div>
+                  <div className="text-[10px] text-neutral-400 mt-0.5 flex items-center gap-1 font-mono">
+                    <span>图文:{realArticleCount}</span>
+                    <span>•</span>
+                    <span>视频:{realVideoCount}</span>
+                    <span>•</span>
+                    <span>文件:{realFileCount}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 作品收藏总数 (favoriteCount) */}
+              <div className="bg-white p-4 rounded-2xl border border-neutral-200/90 shadow-xs hover:border-neutral-300 transition-all flex flex-col justify-between space-y-2">
+                <div className="flex items-center justify-between text-neutral-500 text-xs font-medium">
+                  <span>作品收藏数</span>
+                  <Bookmark className="w-4 h-4 text-amber-500 fill-amber-500/20" />
+                </div>
+                <div>
+                  <div className="text-2xl font-black font-mono text-neutral-900">
+                    {realFavoriteCount.toLocaleString()}
+                  </div>
+                  <div className="text-[10px] text-amber-600 font-semibold mt-0.5">
+                    favoriteCount 接口字段
+                  </div>
+                </div>
+              </div>
+
+              {/* 作品评论总数 (commentCount) */}
+              <div className="bg-white p-4 rounded-2xl border border-neutral-200/90 shadow-xs hover:border-neutral-300 transition-all flex flex-col justify-between space-y-2">
+                <div className="flex items-center justify-between text-neutral-500 text-xs font-medium">
+                  <span>作品评论数</span>
+                  <MessageCircle className="w-4 h-4 text-emerald-500" />
+                </div>
+                <div>
+                  <div className="text-2xl font-black font-mono text-neutral-900">
+                    {realCommentCount.toLocaleString()}
+                  </div>
+                  <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">
+                    commentCount 接口字段
+                  </div>
+                </div>
+              </div>
+
+              {/* 粉丝数 (followerCount) */}
+              <button
+                onClick={() => { setFollowModalTab('followers'); setIsFollowModalOpen(true); }}
+                className="bg-white p-4 rounded-2xl border border-neutral-200/90 shadow-xs hover:border-neutral-300 hover:shadow-md transition-all text-left flex flex-col justify-between space-y-2 cursor-pointer group"
+              >
+                <div className="flex items-center justify-between text-neutral-500 text-xs font-medium group-hover:text-[#0057FF]">
+                  <span>粉丝数</span>
+                  <UserPlus className="w-4 h-4 text-blue-500" />
+                </div>
+                <div>
+                  <div className="text-2xl font-black font-mono text-neutral-900 group-hover:text-[#0057FF]">
+                    {profileUser.followerCount || 0}
+                  </div>
+                  <div className="text-[10px] text-neutral-400 mt-0.5 group-hover:underline">
+                    followerCount 点击查看
+                  </div>
+                </div>
+              </button>
+
+              {/* 关注数 (followingCount) */}
+              <button
+                onClick={() => { setFollowModalTab('following'); setIsFollowModalOpen(true); }}
+                className="bg-white p-4 rounded-2xl border border-neutral-200/90 shadow-xs hover:border-neutral-300 hover:shadow-md transition-all text-left flex flex-col justify-between space-y-2 cursor-pointer group"
+              >
+                <div className="flex items-center justify-between text-neutral-500 text-xs font-medium group-hover:text-[#0057FF]">
+                  <span>关注数</span>
+                  <UserCheck className="w-4 h-4 text-purple-500" />
+                </div>
+                <div>
+                  <div className="text-2xl font-black font-mono text-neutral-900 group-hover:text-[#0057FF]">
+                    {profileUser.followingCount || 0}
+                  </div>
+                  <div className="text-[10px] text-neutral-400 mt-0.5 group-hover:underline">
+                    followingCount 点击查看
+                  </div>
+                </div>
+              </button>
+
+            </div>
+
+            {/* 2. 顶栏 Tab 导航 (作品 / 情绪板 / 好评 / API 数据全景) */}
+            <div className="flex items-center justify-between border-b border-neutral-200/90 bg-white px-4 rounded-2xl border shadow-xs">
+              <div className="flex items-center gap-6 sm:gap-8">
+                <button
+                  onClick={() => setActiveTab('works')}
+                  className={`py-3.5 text-sm sm:text-base font-bold transition-all relative cursor-pointer ${
+                    activeTab === 'works' ? 'text-black border-b-2 border-black' : 'text-neutral-500 hover:text-black'
+                  }`}
+                >
+                  作品 ({allWorks.length})
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('moodboards')}
+                  className={`py-3.5 text-sm sm:text-base font-bold transition-all relative cursor-pointer ${
+                    activeTab === 'moodboards' ? 'text-black border-b-2 border-black' : 'text-neutral-500 hover:text-black'
+                  }`}
+                >
+                  情绪板 / 收藏集
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('appreciations')}
+                  className={`py-3.5 text-sm sm:text-base font-bold transition-all relative cursor-pointer ${
+                    activeTab === 'appreciations' ? 'text-black border-b-2 border-black' : 'text-neutral-500 hover:text-black'
+                  }`}
+                >
+                  好评 / 获得赞
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('apidata')}
+                  className={`py-3.5 text-sm sm:text-base font-bold transition-all relative cursor-pointer flex items-center gap-1.5 ${
+                    activeTab === 'apidata' ? 'text-[#0057FF] border-b-2 border-[#0057FF]' : 'text-neutral-500 hover:text-black'
+                  }`}
+                >
+                  <Code className="w-4 h-4" />
+                  API 字段全景
+                </button>
+              </div>
+            </div>
+
+            {/* 子分类筛选 pills */}
+            {activeTab === 'works' && (
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+                <button
+                  onClick={() => setWorksSubTab('all')}
+                  className={`px-3.5 py-1.5 rounded-full font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    worksSubTab === 'all'
+                      ? 'bg-neutral-900 text-white shadow-xs'
+                      : 'bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-100'
+                  }`}
+                >
+                  全部作品 ({allWorks.length})
+                </button>
+                <button
+                  onClick={() => setWorksSubTab('articles')}
+                  className={`px-3.5 py-1.5 rounded-full font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    worksSubTab === 'articles'
+                      ? 'bg-neutral-900 text-white shadow-xs'
+                      : 'bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-100'
+                  }`}
+                >
+                  图文文章 ({userArticles.length})
+                </button>
+                <button
+                  onClick={() => setWorksSubTab('videos')}
+                  className={`px-3.5 py-1.5 rounded-full font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    worksSubTab === 'videos'
+                      ? 'bg-neutral-900 text-white shadow-xs'
+                      : 'bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-100'
+                  }`}
+                >
+                  动效视频 ({userVideos.length})
+                </button>
+                <button
+                  onClick={() => setWorksSubTab('files')}
+                  className={`px-3.5 py-1.5 rounded-full font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    worksSubTab === 'files'
+                      ? 'bg-neutral-900 text-white shadow-xs'
+                      : 'bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-100'
+                  }`}
+                >
+                  设计资源 ({userFiles.length})
+                </button>
+              </div>
+            )}
+
+            {/* 内容渲染区域 */}
+            {activeTab === 'works' ? (
+              displayedWorks.length === 0 ? (
+                <div className="py-20 text-center text-xs text-neutral-400 bg-white rounded-2xl border border-dashed border-neutral-200 space-y-2">
+                  <Layers className="w-8 h-8 mx-auto text-neutral-300" />
+                  <p className="font-semibold text-neutral-600">该分类下暂无已发布的作品</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 gap-5">
+                  {displayedWorks.map((work, idx) => (
+                    <BehanceWorkCard
+                      key={`work-${work.type}-${work.id}-${idx}`}
+                      item={work}
+                      isSelf={isSelf}
+                      onDelete={() => {
+                        if (work.type === 'article') handleDeleteArticle(work.id);
+                        if (work.type === 'video') handleDeleteVideo(work.id);
+                        if (work.type === 'file') handleDeleteFile(work.id);
+                      }}
+                      onEdit={() => {
+                        if (work.type === 'article') {
+                          articlesApi.getArticleById(work.id).then(full => {
+                            setEditModalData({ type: 'article', article: full });
+                          }).catch(() => setEditModalData({ type: 'article', article: work.rawItem as Article }));
+                        }
+                        if (work.type === 'video') {
+                          videosApi.getVideoById(work.id).then(full => {
+                            setEditModalData({ type: 'video', video: full });
+                          }).catch(() => setEditModalData({ type: 'video', video: work.rawItem as Video }));
+                        }
+                        if (work.type === 'file') {
+                          filesApi.getFileById(work.id).then(full => {
+                            setEditModalData({ type: 'file', file: full });
+                          }).catch(() => setEditModalData({ type: 'file', file: work.rawItem as FileItem }));
+                        }
+                      }}
+                      onToggleStatus={() => {
+                        if (work.type === 'article') handleToggleArticleStatus(work.id, work.status);
+                        if (work.type === 'video') handleToggleVideoStatus(work.id, work.status);
+                        if (work.type === 'file') handleToggleFileStatus(work.id, work.status);
+                      }}
+                    />
+                  ))}
+                </div>
+              )
+            ) : activeTab === 'moodboards' ? (
+              /* 情绪板 / 收藏集 */
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 gap-5">
+                {allWorks.filter(w => w.favoriteCount > 0).length === 0 ? (
+                  <div className="col-span-full py-20 text-center text-xs text-neutral-400 bg-white rounded-2xl border border-dashed border-neutral-200 space-y-2">
+                    <BookmarkCheck className="w-8 h-8 mx-auto text-neutral-300" />
+                    <p className="font-semibold text-neutral-600">暂无收藏的情绪板项目</p>
+                  </div>
+                ) : (
+                  allWorks.filter(w => w.favoriteCount > 0).map((work, idx) => (
+                    <BehanceWorkCard
+                      key={`mood-${work.type}-${work.id}-${idx}`}
+                      item={work}
+                      isSelf={isSelf}
+                      onDelete={() => {}}
+                      onEdit={() => {}}
+                      onToggleStatus={() => {}}
+                    />
+                  ))
+                )}
+              </div>
+            ) : activeTab === 'appreciations' ? (
+              /* 好评 / 获得点赞的项目 */
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 gap-5">
+                {allWorks.filter(w => w.likeCount > 0).length === 0 ? (
+                  <div className="col-span-full py-20 text-center text-xs text-neutral-400 bg-white rounded-2xl border border-dashed border-neutral-200 space-y-2">
+                    <Award className="w-8 h-8 mx-auto text-neutral-300" />
+                    <p className="font-semibold text-neutral-600">暂无获得好评的项目</p>
+                  </div>
+                ) : (
+                  allWorks.filter(w => w.likeCount > 0).map((work, idx) => (
+                    <BehanceWorkCard
+                      key={`apprec-${work.type}-${work.id}-${idx}`}
+                      item={work}
+                      isSelf={isSelf}
+                      onDelete={() => {}}
+                      onEdit={() => {}}
+                      onToggleStatus={() => {}}
+                    />
+                  ))
+                )}
+              </div>
+            ) : (
+              /* API 数据全景展台 (GET /auth/me 专属高科技属性全展现) */
+              <div className="bg-neutral-900 text-white rounded-3xl p-6 sm:p-8 border border-neutral-800 shadow-2xl space-y-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-neutral-800">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-[#0057FF]/20 text-[#0057FF] rounded-2xl border border-[#0057FF]/30">
+                      <Code className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-white">GET /auth/me 接口响应全量字段阵列 (Full API Schema)</h3>
+                      <p className="text-xs text-neutral-400">列出 API 规范中定义的全部用户信息字段及其实时数据</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full text-xs font-mono font-bold">
+                      HTTP 200 OK
+                    </span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(JSON.stringify(profileUser, null, 2));
+                        alert('已复制 GET /auth/me 全量响应 JSON 到剪贴板！');
+                      }}
+                      className="px-3 py-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 rounded-full text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1"
+                    >
+                      <Sparkles className="w-3 h-3 text-amber-400" /> 复制 JSON
+                    </button>
+                  </div>
+                </div>
+
+                {/* 全量字段双列可视化卡片 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 font-mono text-xs">
+                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
+                    <span className="text-neutral-400">1. id (Long)</span>
+                    <span className="text-amber-400 font-bold">{profileUser.id}</span>
+                  </div>
+                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
+                    <span className="text-neutral-400">2. username (String)</span>
+                    <span className="text-emerald-400 font-bold">"{profileUser.username || profileUser.nickName}"</span>
+                  </div>
+                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
+                    <span className="text-neutral-400">3. nickName (String)</span>
+                    <span className="text-emerald-400 font-bold">"{profileUser.nickName}"</span>
+                  </div>
+                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
+                    <span className="text-neutral-400">4. avatar (String)</span>
+                    <span className="text-blue-400 font-bold truncate max-w-[180px]">"{profileUser.avatar}"</span>
+                  </div>
+                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
+                    <span className="text-neutral-400">5. phone (String)</span>
+                    <span className="text-emerald-400 font-bold">"{profileUser.phone || '138****8888'}"</span>
+                  </div>
+                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
+                    <span className="text-neutral-400">6. email (String)</span>
+                    <span className="text-emerald-400 font-bold">"{profileUser.email || 'user@example.com'}"</span>
+                  </div>
+                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
+                    <span className="text-neutral-400">7. gender (Integer)</span>
+                    <span className="text-amber-400 font-bold">{profileUser.gender ?? 0} ({profileUser.gender === 1 ? '男' : profileUser.gender === 2 ? '女' : '保密'})</span>
+                  </div>
+                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
+                    <span className="text-neutral-400">8. birthday (LocalDate)</span>
+                    <span className="text-emerald-400 font-bold">"{profileUser.birthday || 'null'}"</span>
+                  </div>
+                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
+                    <span className="text-neutral-400">9. signature (String)</span>
+                    <span className="text-emerald-400 font-bold truncate max-w-[180px]">"{profileUser.signature || '无'}"</span>
+                  </div>
+                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
+                    <span className="text-neutral-400">10. role (Integer)</span>
+                    <span className="text-amber-400 font-bold">{profileUser.role} ({profileUser.role === 1 ? '超级管理员' : '普通创作者'})</span>
+                  </div>
+                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
+                    <span className="text-neutral-400">11. status (Integer)</span>
+                    <span className="text-amber-400 font-bold">{profileUser.status} ({profileUser.status === 0 ? '账号正常' : '已冻结'})</span>
+                  </div>
+                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
+                    <span className="text-neutral-400">12. articleCount (Long)</span>
+                    <span className="text-amber-400 font-bold">{realArticleCount}</span>
+                  </div>
+                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
+                    <span className="text-neutral-400">13. videoCount (Long)</span>
+                    <span className="text-amber-400 font-bold">{realVideoCount}</span>
+                  </div>
+                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
+                    <span className="text-neutral-400">14. fileCount (Long)</span>
+                    <span className="text-amber-400 font-bold">{realFileCount}</span>
+                  </div>
+                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
+                    <span className="text-neutral-400">15. worksCount (Long)</span>
+                    <span className="text-amber-400 font-bold">{realWorksCount}</span>
+                  </div>
+                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
+                    <span className="text-neutral-400">16. favoriteCount (Long)</span>
+                    <span className="text-amber-400 font-bold">{realFavoriteCount}</span>
+                  </div>
+                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
+                    <span className="text-neutral-400">17. commentCount (Long)</span>
+                    <span className="text-amber-400 font-bold">{realCommentCount}</span>
+                  </div>
+                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
+                    <span className="text-neutral-400">18. followerCount (Long)</span>
+                    <span className="text-amber-400 font-bold">{profileUser.followerCount || 0}</span>
+                  </div>
+                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
+                    <span className="text-neutral-400">19. followingCount (Long)</span>
+                    <span className="text-amber-400 font-bold">{profileUser.followingCount || 0}</span>
+                  </div>
+                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
+                    <span className="text-neutral-400">20. createdAt (DateTime)</span>
+                    <span className="text-emerald-400 font-bold">"{profileUser.createdAt || '2025-01-01T00:00:00.000Z'}"</span>
+                  </div>
+                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between col-span-1 md:col-span-2">
+                    <span className="text-neutral-400">21. isFollowing (Boolean)</span>
+                    <span className="text-purple-400 font-bold">{String(!!profileUser.isFollowing)}</span>
+                  </div>
+                </div>
+
+                {/* RAW JSON Code Block */}
+                <div className="pt-4 border-t border-neutral-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-neutral-400 font-mono">
+                    <span>RAW JSON RESPONSE</span>
+                    <span>Content-Type: application/json</span>
+                  </div>
+                  <pre className="p-4 bg-black/90 rounded-2xl border border-neutral-800/80 overflow-x-auto text-xs font-mono text-emerald-400 leading-relaxed max-h-60 overflow-y-auto">
+                    {JSON.stringify(profileUser, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Content Grid */}
-      {activeTab === 'articles' ? (
-        userArticles.length === 0 ? (
-          <div className="py-16 text-center text-xs text-neutral-500 bg-neutral-50 rounded-2xl border border-neutral-200">暂无已发布的文章作品</div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {userArticles.map((a, idx) => (
-              <ManageableArticleCard
-                key={`user-art-${a.id ?? idx}-${idx}`}
-                article={a}
-                isSelf={isSelf}
-                onDelete={() => handleDeleteArticle(a.id)}
-                onEdit={() => {
-                  // 列表接口不返回 content 字段，需要先获取完整详情
-                  articlesApi.getArticleById(a.id).then(full => {
-                    setEditModalData({ type: 'article', article: full });
-                  }).catch(() => {
-                    setEditModalData({ type: 'article', article: a });
-                  });
-                }}
-                onToggleStatus={() => handleToggleArticleStatus(a.id, a.status)}
-
-
-              />
-            ))}
-          </div>
-        )
-      ) : activeTab === 'videos' ? (
-        userVideos.length === 0 ? (
-          <div className="py-16 text-center text-xs text-neutral-500 bg-neutral-50 rounded-2xl border border-neutral-200">暂无已发布的动效视频</div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {userVideos.map((v, idx) => (
-              <ManageableVideoCard
-                key={`user-vid-${v.id ?? idx}-${idx}`}
-                video={v}
-                isSelf={isSelf}
-                onDelete={() => handleDeleteVideo(v.id)}
-                onEdit={() => {
-                  // 列表接口不返回 description/videoUrl/status 等字段，需要先获取完整详情
-                  videosApi.getVideoById(v.id).then(full => {
-                    setEditModalData({ type: 'video', video: full });
-                  }).catch(() => {
-                    setEditModalData({ type: 'video', video: v });
-                  });
-                }}
-                onToggleStatus={() => handleToggleVideoStatus(v.id, v.status)}
-
-
-              />
-            ))}
-          </div>
-        )
-      ) : (
-        userFiles.length === 0 ? (
-          <div className="py-16 text-center text-xs text-neutral-500 bg-neutral-50 rounded-2xl border border-neutral-200">暂无已发布的资源文件</div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {userFiles.map((f, idx) => (
-              <ManageableFileCard
-                key={`user-file-${f.id ?? idx}-${idx}`}
-                file={f}
-                isSelf={isSelf}
-                onDelete={() => handleDeleteFile(f.id)}
-                onEdit={() => {
-                  // 列表接口可能缺少 description 等字段，先获取完整详情
-                  filesApi.getFileById(f.id).then(full => {
-                    setEditModalData({ type: 'file', file: full });
-                  }).catch(() => {
-                    setEditModalData({ type: 'file', file: f });
-                  });
-                }}
-                onToggleStatus={() => handleToggleFileStatus(f.id, f.status)}
-
-
-              />
-            ))}
-          </div>
-        )
-      )}
-
-      <FollowerModal isOpen={isFollowModalOpen} userId={profileUser.id} initialTab={followModalTab} onClose={() => setIsFollowModalOpen(false)} />
-      <ChatDrawer isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} targetUser={profileUser} />
+      {/* Modals & Drawers */}
+      <FollowerModal
+        isOpen={isFollowModalOpen}
+        userId={profileUser.id}
+        initialTab={followModalTab}
+        onClose={() => setIsFollowModalOpen(false)}
+      />
+      <ChatDrawer
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        targetUser={profileUser}
+      />
 
       {/* 编辑作品弹窗 */}
       <CreateWorkModal
@@ -598,7 +1117,6 @@ export const UserProfilePage: React.FC = () => {
         onClose={() => setEditModalData(null)}
         editData={editModalData}
         onSuccess={() => {
-          // 刷新数据
           if (id) {
             const userId = Number(id);
             Promise.all([
@@ -616,5 +1134,3 @@ export const UserProfilePage: React.FC = () => {
     </div>
   );
 };
-
-

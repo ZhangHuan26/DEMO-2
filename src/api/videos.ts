@@ -58,11 +58,12 @@ export const videosApi = {
   },
 
   // 13.1 GET /videos
-  getVideos: async (params?: { page?: number; limit?: number; userId?: number; categoryId?: number; search?: string }) => {
+  getVideos: async (params?: { page?: number; limit?: number; size?: number; userId?: number; categoryId?: number; search?: string; keyword?: string; sort?: string }) => {
     try {
-      const { limit, ...rest } = params || {};
+      const { limit, size, search, keyword, ...rest } = params || {};
       const queryParams: any = { ...rest };
-      if (limit !== undefined) queryParams.size = limit;
+      if (limit !== undefined || size !== undefined) queryParams.size = limit ?? size;
+      if (search || keyword) queryParams.keyword = search || keyword;
       const res = await apiClient.get('/videos', { params: queryParams });
       const result = res.data;
       const data = result?.data ?? result;
@@ -76,13 +77,113 @@ export const videosApi = {
   // 13.2 GET /videos/{id}
   getVideoById: async (id: number): Promise<Video> => {
     const res = await apiClient.get(`/videos/${id}`);
-    return res.data.video || res.data?.data || res.data;
+    const result = res.data;
+    const data = result?.data ?? result;
+    const video = data?.video ?? data;
+
+    const authorObj = video?.author || video?.user || video?.creator || data?.author || data?.user;
+    const isFollowing = 
+      authorObj?.isFollowing ??
+      authorObj?.is_following ??
+      authorObj?.isFollowed ??
+      authorObj?.is_followed ??
+      authorObj?.isFollow ??
+      video?.isFollowingAuthor ??
+      video?.is_following_author ??
+      video?.isFollowing ??
+      video?.is_following ??
+      video?.isFollowed ??
+      data?.isFollowing ??
+      data?.is_following ??
+      false;
+
+    const normalizedAuthor = authorObj ? {
+      ...authorObj,
+      isFollowing: Boolean(isFollowing),
+      nickName: authorObj.nickName || authorObj.nickname || authorObj.username || authorObj.name || '创作者',
+      avatar: authorObj.avatar || authorObj.avatarUrl || authorObj.headImg || '',
+    } : undefined;
+
+    return {
+      ...video,
+      author: normalizedAuthor,
+      viewCount: video?.viewCount ?? video?.view_count ?? video?.views ?? video?.playCount ?? video?.plays ?? 0,
+      categoryName: video?.category?.name || video?.categoryName || video?.category_name,
+    };
   },
 
   // 13.3 POST /videos
-  createVideo: async (data: { title: string; description?: string; videoUrl: string; coverImage: string; duration?: string; categoryId: number; allowDownload?: number; status?: number }) => {
-    const res = await apiClient.post('/videos', data);
+  createVideo: async (data: {
+    title: string;
+    description?: string;
+    videoUrl: string;
+    coverImage?: string;
+    duration?: number | string;
+    fileSize?: number;
+    categoryId?: number;
+    status?: number;
+    allowDownload?: number;
+  }) => {
+    // 解析时长：如果为字符串 (如 "04:35" 或 "01:10:20")，转换为秒整型 (API 文档 int)
+    let durationSec: number | undefined = undefined;
+    if (typeof data.duration === 'number') {
+      durationSec = data.duration;
+    } else if (typeof data.duration === 'string' && data.duration.trim()) {
+      const parts = data.duration.trim().split(':').map(p => parseInt(p, 10));
+      if (parts.every(p => !isNaN(p))) {
+        if (parts.length === 3) {
+          durationSec = parts[0] * 3600 + parts[1] * 60 + parts[2];
+        } else if (parts.length === 2) {
+          durationSec = parts[0] * 60 + parts[1];
+        } else if (parts.length === 1) {
+          durationSec = parts[0];
+        }
+      }
+    }
+
+    const payload: Record<string, any> = {
+      title: data.title,
+      description: data.description ?? '',
+      videoUrl: data.videoUrl,
+      coverImage: data.coverImage ?? '',
+      duration: durationSec !== undefined ? durationSec : (data.duration ?? 0),
+      categoryId: data.categoryId ? Number(data.categoryId) : undefined,
+      status: data.status !== undefined ? Number(data.status) : 0,
+    };
+
+    if (data.fileSize !== undefined) payload.fileSize = Number(data.fileSize);
+    if (data.allowDownload !== undefined) payload.allowDownload = Number(data.allowDownload);
+
+    const res = await apiClient.post('/videos', payload);
     return res.data;
+  },
+
+  // 22.2 POST /uploads/video
+  uploadVideo: async (formData: FormData): Promise<{ url: string }> => {
+    try {
+      const res = await apiClient.post('/uploads/video', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const data = res.data?.data || res.data;
+      if (data && data.url) return { url: data.url };
+      if (typeof data === 'string') return { url: data };
+      return res.data;
+    } catch {
+      const file = formData.get('file') as File | null;
+      if (file && file instanceof File) {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            resolve({ url: reader.result as string });
+          };
+          reader.onerror = () => {
+            resolve({ url: URL.createObjectURL(file) });
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+      return { url: '' };
+    }
   },
 
   // 13.4 PUT /videos/{id}
@@ -127,9 +228,21 @@ export const videosApi = {
     return res.data;
   },
 
+  // 14.1.2 DELETE /videos/{id}/like
+  unlikeVideo: async (id: number) => {
+    const res = await apiClient.delete(`/videos/${id}/like`);
+    return res.data;
+  },
+
   // 14.2 POST /videos/{id}/favorite
   favoriteVideo: async (id: number) => {
     const res = await apiClient.post(`/videos/${id}/favorite`);
+    return res.data;
+  },
+
+  // 14.2.2 DELETE /videos/{id}/favorite
+  unfavoriteVideo: async (id: number) => {
+    const res = await apiClient.delete(`/videos/${id}/favorite`);
     return res.data;
   },
 

@@ -23,8 +23,30 @@ apiClient.interceptors.request.use(
 
 // Response interceptor
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const resData = response.data;
+    if (resData && resData.code === 40900) {
+      window.dispatchEvent(new CustomEvent('show-notice', {
+        detail: {
+          title: '关注提示',
+          message: resData.message || '已关注该用户，请勿重复关注',
+          code: resData.code || 40900,
+        },
+      }));
+    }
+    return response;
+  },
   (error) => {
+    const resData = error.response?.data;
+    if (resData && (resData.code === 40900 || resData.message?.includes('已关注'))) {
+      window.dispatchEvent(new CustomEvent('show-notice', {
+        detail: {
+          title: '关注提示',
+          message: resData.message || '已关注该用户，请勿重复关注',
+          code: resData.code || 40900,
+        },
+      }));
+    }
     if (error.response && error.response.status === 401) {
       // Unauthenticated, clear token if expired
       localStorage.removeItem('token');

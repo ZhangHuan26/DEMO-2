@@ -4,11 +4,14 @@ import { Report, Appeal, ModerationLog, User, CreatorStats, SystemSettings, Free
 export const adminApi = {
   // 17.1 POST /reports
   submitReport: async (data: { targetType: number; targetId: number; reasonType?: number; reasonDetail?: string; reason?: string; evidenceImages?: string[] }) => {
+    const evidenceList = data.evidenceImages || [];
     const res = await apiClient.post('/reports', {
-      targetType: data.targetType,
-      targetId: data.targetId,
+      targetType: Number(data.targetType),
+      targetId: Number(data.targetId),
       reasonType: data.reasonType ?? 0,
       reasonDetail: data.reasonDetail || data.reason || '',
+      evidenceImages: evidenceList,
+      evidence_images: evidenceList,
     });
     return res.data;
   },
@@ -293,6 +296,34 @@ export const adminApi = {
   uploadImage: async (formData: FormData): Promise<{ url: string }> => {
     try {
       const res = await apiClient.post('/uploads/image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const data = res.data?.data || res.data;
+      if (data && data.url) return { url: data.url };
+      if (typeof data === 'string') return { url: data };
+      return res.data;
+    } catch {
+      const file = formData.get('file') as File | null;
+      if (file && file instanceof File) {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            resolve({ url: reader.result as string });
+          };
+          reader.onerror = () => {
+            resolve({ url: URL.createObjectURL(file) });
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+      return { url: '' };
+    }
+  },
+
+  // 22.2 POST /uploads/video
+  uploadVideo: async (formData: FormData): Promise<{ url: string }> => {
+    try {
+      const res = await apiClient.post('/uploads/video', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       const data = res.data?.data || res.data;

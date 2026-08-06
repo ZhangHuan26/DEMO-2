@@ -1,141 +1,154 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Bell, CheckCheck, Trash2, Heart, MessageSquare, UserPlus, ShieldAlert } from 'lucide-react';
-import { Notification } from '../../types';
 import { notificationsApi } from '../../api/notifications';
+import { Notification } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 
-import { useNavigate } from 'react-router-dom';
-
 export const NotificationsPage: React.FC = () => {
+  const { refreshCounts } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, refreshCounts } = useAuth();
-  const navigate = useNavigate();
 
-  // 如果未登录，显示提示
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center text-center p-6">
-        <div className="space-y-4">
-          <div className="text-6xl">🔒</div>
-          <h2 className="text-xl font-bold text-neutral-900">请先登录</h2>
-          <p className="text-sm text-neutral-600">您需要登录后才能查看消息通知</p>
-          <button 
-            onClick={() => navigate('/login')}
-            className="mt-4 px-6 py-2.5 bg-[#0057FF] text-white text-sm font-bold rounded-full hover:bg-[#0046CC] transition-colors"
-          >
-            前往登录
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  useEffect(() => {
-    const loadNotifs = async () => {
-      setLoading(true);
-      try {
-        const list = await notificationsApi.getNotifications();
-
-        setNotifications(list);
-      } catch {
-        setNotifications([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadNotifs();
-  }, []);
-
-  const handleMarkRead = async (id: number) => {
+  const fetchNotifications = async () => {
+    setLoading(true);
     try {
-      await notificationsApi.markNotificationRead(id);
-
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: 1 } : n));
-      refreshCounts();
-    } catch {
-      // ignore
+      const list = await notificationsApi.getNotifications();
+      setNotifications(list);
+    } catch (err) {
+      console.error('Failed to load notifications:', err);
+    } finally {
+      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
 
   const handleMarkAllRead = async () => {
     try {
       await notificationsApi.markAllNotificationsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: 1 })));
+      await refreshCounts();
+    } catch (err) {
+      console.error('Failed to mark all as read:', err);
+    }
+  };
 
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: 1 })));
-      refreshCounts();
-    } catch {
-      // ignore
+  const handleMarkRead = async (id: number) => {
+    try {
+      await notificationsApi.markNotificationRead(id);
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: 1 } : n)));
+      await refreshCounts();
+    } catch (err) {
+      console.error('Failed to mark notification as read:', err);
     }
   };
 
   const handleDelete = async (id: number) => {
     try {
       await notificationsApi.deleteNotification(id);
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      await refreshCounts();
+    } catch (err) {
+      console.error('Failed to delete notification:', err);
+    }
+  };
 
-      setNotifications(prev => prev.filter(n => n.id !== id));
-      refreshCounts();
-    } catch {
-      // ignore
+  const getNotificationIcon = (type: number) => {
+    switch (type) {
+      case 0:
+      case 4:
+        return <Heart className="w-4 h-4 text-rose-500" />;
+      case 1:
+      case 2:
+        return <MessageSquare className="w-4 h-4 text-[#0057FF]" />;
+      case 3:
+        return <UserPlus className="w-4 h-4 text-emerald-500" />;
+      default:
+        return <ShieldAlert className="w-4 h-4 text-amber-500" />;
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
-      <div className="flex items-center justify-between border-b border-neutral-200 pb-4">
-        <div className="flex items-center gap-2">
-          <Bell className="w-5 h-5 text-[#0057FF]" />
-          <h1 className="text-lg font-bold text-neutral-900">消息通知中心</h1>
+    <div className="w-full px-[20px] py-8 space-y-6">
+      <div className="flex items-center justify-between border-b border-neutral-200 pb-6">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-neutral-900 flex items-center gap-2">
+            <Bell className="w-6 h-6 text-[#0057FF]" />
+            消息通知中心
+          </h1>
+          <p className="text-sm text-neutral-500 mt-1">
+            查看您在社区收到的互动提醒与系统通知
+          </p>
         </div>
-
-        <button
-          onClick={handleMarkAllRead}
-          className="text-xs text-[#0057FF] hover:underline flex items-center gap-1 font-semibold cursor-pointer"
-        >
-          <CheckCheck className="w-4 h-4" /> 全部标记为已读
-        </button>
+        {notifications.length > 0 && (
+          <button
+            onClick={handleMarkAllRead}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs font-bold rounded-xl transition-all cursor-pointer"
+          >
+            <CheckCheck className="w-4 h-4" />
+            全部标记已读
+          </button>
+        )}
       </div>
 
       {loading ? (
-        <div className="py-20 text-center text-sm text-neutral-500">正在加载消息通知...</div>
+        <div className="space-y-4">
+          {[1, 2, 3, 4].map((n) => (
+            <div key={n} className="bg-white border border-neutral-200 rounded-2xl p-4 animate-pulse flex items-center gap-4">
+              <div className="w-10 h-10 bg-neutral-200 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 bg-neutral-200 rounded w-1/3" />
+                <div className="h-3 bg-neutral-200 rounded w-2/3" />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : notifications.length === 0 ? (
-        <div className="py-20 text-center text-sm text-neutral-500 bg-neutral-50 rounded-2xl border border-neutral-200">暂无任何消息通知</div>
+        <div className="text-center py-16 bg-white border border-neutral-200 rounded-2xl p-8 space-y-3">
+          <Bell className="w-12 h-12 text-neutral-400 mx-auto" />
+          <p className="text-neutral-600 font-medium">暂无消息通知</p>
+        </div>
       ) : (
         <div className="space-y-3">
-          {notifications.map((n) => (
+          {notifications.map((item) => (
             <div
-              key={n.id}
-              onClick={() => handleMarkRead(n.id)}
-              className={`p-4 rounded-xl border transition-all flex items-start gap-3 cursor-pointer ${
-                n.isRead === 0
-                  ? 'bg-blue-50/60 border-[#0057FF]/30 shadow-lg'
-                  : 'bg-neutral-50 border-neutral-200 opacity-80'
+              key={item.id}
+              className={`bg-white border rounded-2xl p-4 flex items-center justify-between gap-4 transition-all ${
+                item.isRead === 0 ? 'border-blue-200 bg-blue-50/20' : 'border-neutral-200'
               }`}
             >
-              <div className="p-2 bg-neutral-100 rounded-lg text-[#0057FF] mt-0.5">
-                {n.type === 'like' && <Heart className="w-4 h-4 text-rose-500" />}
-                {n.type === 'follow' && <UserPlus className="w-4 h-4 text-emerald-500" />}
-                {n.type === 'comment' && <MessageSquare className="w-4 h-4 text-blue-500" />}
-                {n.type === 'system' && <ShieldAlert className="w-4 h-4 text-amber-500" />}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <h4 className="text-sm font-bold text-neutral-900">{n.title}</h4>
-                  <span className="text-xs text-neutral-500">{new Date(n.createdAt).toLocaleDateString()}</span>
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-neutral-100 rounded-xl shrink-0">
+                  {getNotificationIcon(item.type)}
                 </div>
-                <p className="text-sm text-neutral-700 leading-relaxed">{n.content}</p>
+                <div>
+                  <p className="text-sm text-neutral-900 font-medium">{item.content}</p>
+                  <p className="text-xs text-neutral-400 mt-0.5">
+                    {item.createdAt ? new Date(item.createdAt).toLocaleString('zh-CN') : ''}
+                  </p>
+                </div>
               </div>
 
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete(n.id);
-                }}
-                className="text-neutral-400 hover:text-rose-500 p-1"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                {item.isRead === 0 && (
+                  <button
+                    onClick={() => handleMarkRead(item.id)}
+                    title="标记为已读"
+                    className="p-2 text-neutral-400 hover:text-[#0057FF] transition-colors rounded-lg hover:bg-neutral-100 cursor-pointer"
+                  >
+                    <CheckCheck className="w-4 h-4" />
+                  </button>
+                )}
+                <button
+                  onClick={() => handleDelete(item.id)}
+                  title="删除通知"
+                  className="p-2 text-neutral-400 hover:text-rose-600 transition-colors rounded-lg hover:bg-neutral-100 cursor-pointer"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           ))}
         </div>

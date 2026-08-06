@@ -154,19 +154,43 @@ export const authApi = {
 
   // 3.1 POST /users/{id}/follow
   followUser: async (id: number) => {
-    const res = await apiClient.post(`/users/${id}/follow`);
-    const result = res.data;
-    const isSuccess = result == null ||
-      result.code === 0 ||
-      result.code === 200 ||
-      result.success === true ||
-      (result.code === undefined && result.data !== undefined);
-    if (isSuccess) {
-      return { success: true, isFollowing: true };
+    try {
+      const res = await apiClient.post(`/users/${id}/follow`);
+      const result = res.data;
+      if (result && (result.code === 40900 || result.code === 409)) {
+        window.dispatchEvent(new CustomEvent('show-notice', {
+          detail: {
+            title: '关注提醒',
+            message: result.message || '已关注该用户，请勿重复关注',
+            code: result.code || 40900,
+          },
+        }));
+        return { success: false, isFollowing: true, code: result.code, message: result.message };
+      }
+      const isSuccess = result == null ||
+        result.code === 0 ||
+        result.code === 200 ||
+        result.success === true ||
+        (result.code === undefined && result.data !== undefined);
+      if (isSuccess) {
+        return { success: true, isFollowing: true };
+      }
+      const err: any = new Error(result?.message || '关注失败');
+      err.response = { data: result };
+      throw err;
+    } catch (err: any) {
+      const resData = err?.response?.data || err?.data;
+      if (resData?.code === 40900 || resData?.message?.includes('已关注') || err?.message?.includes('已关注')) {
+        window.dispatchEvent(new CustomEvent('show-notice', {
+          detail: {
+            title: '关注提醒',
+            message: resData?.message || '已关注该用户，请勿重复关注',
+            code: resData?.code || 40900,
+          },
+        }));
+      }
+      throw err;
     }
-    const err: any = new Error(result?.message || '关注失败');
-    err.response = { data: result };
-    throw err;
   },
 
   // 3.2 DELETE /users/{id}/follow

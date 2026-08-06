@@ -4,6 +4,7 @@ import { ThumbsUp, Star, Users } from 'lucide-react';
 import { User } from '../../types';
 import { authApi } from '../../api/auth';
 import { resolveImageUrl } from '../../config/env';
+import { openAuthorModal } from './AuthorProfileModal';
 
 interface InteractorUser {
   id: number;
@@ -102,17 +103,17 @@ export const LikeFavoriteAvatarWall: React.FC<LikeFavoriteAvatarWallProps> = ({
   const displayFavoriteCount = Math.max(favoriteCount, interactors.filter(i => i.actionType === 'favorite' || i.actionType === 'both').length);
 
   return (
-    <div className="bg-neutral-900/90 border border-neutral-800/90 rounded-2xl p-6 space-y-5 shadow-2xl backdrop-blur-md">
+    <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-5 shadow-xl text-white">
       {/* 头部标题与 Tab 切换 */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-800 pb-4">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-[#0057FF]/20 text-[#0057FF] flex items-center justify-center font-bold">
+          <div className="w-8 h-8 rounded-full bg-[#0057FF]/20 text-[#0057FF] flex items-center justify-center font-bold border border-[#0057FF]/30">
             <Users className="w-4 h-4" />
           </div>
           <div>
             <h3 className="text-base font-bold text-white flex items-center gap-2">
               点赞与收藏创作者墙
-              <span className="text-xs px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 font-mono">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 border border-neutral-700 font-mono">
                 {displayLikeCount + displayFavoriteCount} 人参与互动
               </span>
             </h3>
@@ -123,12 +124,12 @@ export const LikeFavoriteAvatarWall: React.FC<LikeFavoriteAvatarWallProps> = ({
         </div>
 
         {/* Tab 控制器 */}
-        <div className="flex items-center gap-1.5 bg-neutral-950 p-1 rounded-xl border border-neutral-800/80 shrink-0">
+        <div className="flex items-center gap-1.5 bg-neutral-950 p-1 rounded-xl border border-neutral-800 shrink-0">
           <button
             onClick={() => setActiveTab('all')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'all'
-                ? 'bg-neutral-800 text-white shadow-xs'
+                ? 'bg-neutral-800 text-white border border-neutral-700 shadow-sm'
                 : 'text-neutral-400 hover:text-white'
             }`}
           >
@@ -138,7 +139,7 @@ export const LikeFavoriteAvatarWall: React.FC<LikeFavoriteAvatarWallProps> = ({
             onClick={() => setActiveTab('like')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'like'
-                ? 'bg-[#0057FF] text-white shadow-xs'
+                ? 'bg-[#0057FF] text-white shadow-sm'
                 : 'text-neutral-400 hover:text-white'
             }`}
           >
@@ -149,7 +150,7 @@ export const LikeFavoriteAvatarWall: React.FC<LikeFavoriteAvatarWallProps> = ({
             onClick={() => setActiveTab('favorite')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'favorite'
-                ? 'bg-amber-500 text-white shadow-xs'
+                ? 'bg-amber-500 text-white shadow-sm'
                 : 'text-neutral-400 hover:text-white'
             }`}
           >
@@ -161,27 +162,27 @@ export const LikeFavoriteAvatarWall: React.FC<LikeFavoriteAvatarWallProps> = ({
 
       {/* 头像墙展示区 */}
       {loading && interactors.length === 0 ? (
-        <div className="flex items-center gap-3 py-2">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="w-12 h-12 rounded-full bg-neutral-800 animate-pulse" />
+        <div className="flex items-center gap-2 py-1">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="w-8 h-8 rounded-full bg-neutral-800 animate-pulse" />
           ))}
         </div>
       ) : (
-        <div className="flex flex-wrap gap-3 items-center pt-1">
+        <div className="flex flex-wrap gap-2 items-center pt-1">
           {filteredInteractors.map((person) => {
             const isSelf = currentUser && person.id === currentUser.id;
             const userAvatar = resolveImageUrl(person.avatar);
             return (
-              <Link
+              <button
                 key={`wall-user-${person.id}`}
-                to={`/users/${person.id}`}
-                className="relative group shrink-0"
+                onClick={() => openAuthorModal(person.id)}
+                className="relative group shrink-0 cursor-pointer"
                 title={`${person.nickName} - ${person.signature || '创作者'}`}
               >
-                <div className={`w-12 h-12 rounded-full overflow-hidden border-2 transition-all group-hover:scale-110 relative shadow-md ${
+                <div className={`w-8 h-8 rounded-full overflow-hidden border transition-all group-hover:scale-110 relative shadow-xs ${
                   isSelf
-                    ? 'border-[#0057FF] ring-2 ring-[#0057FF]/40'
-                    : 'border-neutral-700 group-hover:border-white'
+                    ? 'border-[#0057FF] ring-2 ring-[#0057FF]/30'
+                    : 'border-neutral-700 group-hover:border-[#0057FF]'
                 }`}>
                   {userAvatar ? (
                     <img
@@ -193,14 +194,14 @@ export const LikeFavoriteAvatarWall: React.FC<LikeFavoriteAvatarWallProps> = ({
                       }}
                     />
                   ) : (
-                    <div className="w-full h-full bg-neutral-800 flex items-center justify-center font-bold text-white text-sm">
+                    <div className="w-full h-full bg-neutral-800 flex items-center justify-center font-bold text-neutral-300 text-xs">
                       {(person.nickName || '?').charAt(0).toUpperCase()}
                     </div>
                   )}
                 </div>
 
                 {/* 右下角 Action 标识 Badge */}
-                <span className={`absolute -bottom-1 -right-1 p-1 rounded-full text-white text-[9px] shadow-lg border border-neutral-900 ${
+                <span className={`absolute -bottom-0.5 -right-0.5 p-0.5 rounded-full text-white shadow-xs border border-neutral-900 ${
                   person.actionType === 'both'
                     ? 'bg-gradient-to-r from-[#0057FF] to-amber-500'
                     : person.actionType === 'like'
@@ -208,14 +209,14 @@ export const LikeFavoriteAvatarWall: React.FC<LikeFavoriteAvatarWallProps> = ({
                     : 'bg-amber-500'
                 }`}>
                   {person.actionType === 'favorite' ? (
-                    <Star className="w-2.5 h-2.5 fill-current" />
+                    <Star className="w-2 h-2 fill-current" />
                   ) : (
-                    <ThumbsUp className="w-2.5 h-2.5 fill-current" />
+                    <ThumbsUp className="w-2 h-2 fill-current" />
                   )}
                 </span>
 
                 {/* Hover Tooltip Float Window */}
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-neutral-950 border border-neutral-700 text-white rounded-xl text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-2xl z-50 flex flex-col items-center">
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-neutral-900 border border-neutral-800 text-white rounded-xl text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-xl z-50 flex flex-col items-center">
                   <span className="font-bold text-white flex items-center gap-1">
                     {person.nickName}
                     {isSelf && <span className="text-[10px] text-[#0057FF] font-mono">(我)</span>}
@@ -223,9 +224,9 @@ export const LikeFavoriteAvatarWall: React.FC<LikeFavoriteAvatarWallProps> = ({
                   <span className="text-[10px] text-neutral-400 mt-0.5">
                     {person.actionType === 'both' ? '❤️ 赞赏并 ⭐ 收藏了作品' : person.actionType === 'like' ? '❤️ 赞赏了作品' : '⭐ 收藏了作品'}
                   </span>
-                  <div className="w-2 h-2 bg-neutral-950 border-r border-b border-neutral-700 rotate-45 -mb-3 mt-1" />
+                  <div className="w-2 h-2 bg-neutral-900 border-r border-b border-neutral-800 rotate-45 -mb-3 mt-1" />
                 </div>
-              </Link>
+              </button>
             );
           })}
         </div>

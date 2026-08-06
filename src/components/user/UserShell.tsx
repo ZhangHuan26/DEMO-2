@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 
 import { Link, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { Plus, Bell, MessageSquare, User as UserIcon, Bookmark, BarChart3, Settings, LogOut, Folder, ShieldAlert, Compass } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { CreateWorkModal } from '../common/CreateWorkModal';
+import { NoticeModal } from '../common/NoticeModal';
 import { ChatDrawer } from './ChatDrawer';
 import { User } from '../../types';
 import { resolveImageUrl } from '../../config/env';
@@ -17,8 +18,20 @@ export const UserShell: React.FC = () => {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [chatTargetUser] = useState<User | null>(null);
+  const [chatTargetUser, setChatTargetUser] = useState<User | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpenAuthorModal = (e: CustomEvent<{ userId: number }>) => {
+      if (e.detail?.userId) {
+        navigate(`/users/${e.detail.userId}`);
+      }
+    };
+    window.addEventListener('open-author-modal' as any, handleOpenAuthorModal as any);
+    return () => {
+      window.removeEventListener('open-author-modal' as any, handleOpenAuthorModal as any);
+    };
+  }, [navigate]);
 
   const navTabs = [
     { label: '探索发现', path: '/' },
@@ -32,55 +45,43 @@ export const UserShell: React.FC = () => {
   return (
     <div className="min-h-screen bg-white text-neutral-900 flex flex-col font-sans selection:bg-[#0057FF] selection:text-white">
       {/* Behance Header Navbar */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-neutral-200 px-4 lg:px-10 py-3.5 shadow-xs">
-
-
-        <div className="max-w-[1700px] mx-auto flex items-center justify-between gap-5 w-full">
-
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-neutral-200 px-[20px] py-3.5 shadow-xs">
+        <div className="w-full flex items-center justify-between gap-5">
           {/* Left: Brand Logo & Navigation Links */}
-        <div className="flex items-center gap-7">
-          <Link to="/" className="flex items-center gap-1.5 group">
-            <div className="bg-black text-white px-3 py-1.5 font-black text-base tracking-tighter rounded-md group-hover:bg-[#0057FF] transition-colors">
-              Leap
-            </div>
-            <div className="border-2 border-black text-black px-3 py-1.5 font-bold text-base tracking-tighter rounded-md group-hover:bg-neutral-100 transition-all">
-              Lunar04
-            </div>
-          </Link>
+          <div className="flex items-center gap-7">
+            <Link to="/" className="flex items-center gap-1.5 group">
+              <div className="bg-black text-white px-3 py-1.5 font-black text-base tracking-tighter rounded-md group-hover:bg-[#0057FF] transition-colors">
+                Leap
+              </div>
+              <div className="border-2 border-black text-black px-3 py-1.5 font-bold text-base tracking-tighter rounded-md group-hover:bg-neutral-100 transition-all">
+                Lunar04
+              </div>
+            </Link>
 
-          {/* Navigation Tabs */}
-          <nav className="hidden md:flex items-center gap-1.5">
-            {navTabs.map((tab) => {
-              const active = location.pathname === tab.path || (tab.path === '/' && location.pathname === '/explore');
-              return (
-                <Link
-                  key={tab.path}
-                  to={tab.path}
-                  className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
-                    active
-                      ? 'bg-neutral-900 text-white shadow-xs'
-                      : 'text-neutral-600 hover:text-black hover:bg-neutral-100'
-                  }`}
-                >
-                  {tab.label}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
+            {/* Navigation Tabs */}
+            <nav className="hidden md:flex items-center gap-1.5">
+              {navTabs.map((tab) => {
+                const active = location.pathname === tab.path || (tab.path === '/' && location.pathname === '/explore');
+                return (
+                  <Link
+                    key={tab.path}
+                    to={tab.path}
+                    className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
+                      active
+                        ? 'bg-neutral-900 text-white shadow-xs'
+                        : 'text-neutral-600 hover:text-black hover:bg-neutral-100'
+                    }`}
+                  >
+                    {tab.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
 
-        {/* Right Action Buttons */}
-        <div className="flex items-center gap-3.5">
-          {/* Create Work Button */}
-          <button
-            onClick={() => setIsCreateOpen(true)}
-            className="px-5 py-2.5 bg-[#0057FF] hover:bg-[#0046CC] text-white text-sm font-bold rounded-full transition-all flex items-center gap-2 shadow-md shadow-[#0057FF]/20 cursor-pointer"
-          >
-            <Plus className="w-4.5 h-4.5" />
-            <span>发布新作品</span>
-          </button>
-
-          {/* Notifications Bell */}
+          {/* Right Action Buttons */}
+          <div className="flex items-center gap-3.5">
+            {/* Notifications Bell */}
           <Link
             to="/notifications"
             className="relative p-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 hover:text-black rounded-full transition-colors"
@@ -236,6 +237,7 @@ export const UserShell: React.FC = () => {
 
 
       {/* Modals & Drawers */}
+      <NoticeModal />
       <CreateWorkModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
       <ChatDrawer isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} targetUser={chatTargetUser} />
     </div>

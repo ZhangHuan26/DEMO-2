@@ -355,13 +355,14 @@ export const FileDetailPage: React.FC = () => {
 
         {/* Liked & Favorited Creator Avatar Wall */}
         <LikeFavoriteAvatarWall
+          contentId={file.id}
+          contentType="file"
           likeCount={file.likeCount}
           favoriteCount={file.favoriteCount}
           isLiked={file.isLiked}
           isFavorited={file.isFavorited}
           currentUser={user}
           workTitle={file.title}
-          workType="file"
         />
 
         {/* File Comments */}

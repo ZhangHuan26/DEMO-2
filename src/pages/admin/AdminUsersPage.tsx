@@ -3,6 +3,7 @@ import { Users, Search, ShieldAlert, Lock, Unlock, History, ShieldCheck, UserX, 
 import { User, FreezeLog } from '../../types';
 import { adminApi } from '../../api/admin';
 import { FreezeModal } from '../../components/common/FreezeModal';
+import { resolveImageUrl } from '../../config/env';
 
 export const AdminUsersPage: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -77,8 +78,20 @@ export const AdminUsersPage: React.FC = () => {
     }
   };
 
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleString('zh-CN');
+  };
+
+  const getGenderLabel = (gender: any) => {
+    const g = Number(gender);
+    if (g === 1) return '男';
+    if (g === 2) return '女';
+    return '保密';
+  };
+
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-6 w-full">
       <div className="flex items-center justify-between border-b border-neutral-200 pb-4">
         <div>
           <h1 className="text-2xl font-bold text-neutral-900 flex items-center gap-2">
@@ -102,98 +115,132 @@ export const AdminUsersPage: React.FC = () => {
 
       {/* Users Table */}
       <div className="bg-white border border-neutral-200/90 rounded-2xl overflow-hidden shadow-xs">
-        <table className="w-full text-left text-sm text-neutral-800">
-          <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-600 text-xs font-bold font-mono">
-            <tr>
-              <th className="px-6 py-3.5">用户 ID</th>
-              <th className="px-6 py-3.5">用户资料</th>
-              <th className="px-6 py-3.5">系统角色</th>
-              <th className="px-6 py-3.5">账号状态</th>
-              <th className="px-6 py-3.5 text-right">管控操作</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-200">
-            {loading ? (
-              <tr><td colSpan={5} className="px-6 py-8 text-center text-neutral-500">正在加载用户记录...</td></tr>
-            ) : users.length === 0 ? (
-              <tr><td colSpan={5} className="px-6 py-8 text-center text-neutral-500">未检索到匹配的用户</td></tr>
-            ) : (
-              users.map((u, idx) => (
-                <tr key={`user-row-${u.id ?? idx}-${idx}`} className="hover:bg-neutral-50/80 transition-colors">
-                  <td className="px-6 py-4 font-mono text-neutral-500 text-xs">#{u.id}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <img src={u.avatar} alt={u.nickName} className="w-9 h-9 rounded-full object-cover border border-neutral-200 shadow-2xs" />
-                      <div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm text-neutral-800 whitespace-nowrap">
+            <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-600 text-xs font-bold font-mono">
+              <tr>
+                <th className="px-6 py-3.5">ID</th>
+                <th className="px-6 py-3.5">用户资料</th>
+                <th className="px-6 py-3.5">邮箱</th>
+                <th className="px-6 py-3.5">手机号</th>
+                <th className="px-6 py-3.5">性别</th>
+                <th className="px-6 py-3.5">生日</th>
+                <th className="px-6 py-3.5">个性签名</th>
+                <th className="px-6 py-3.5">角色</th>
+                <th className="px-6 py-3.5">状态</th>
+                <th className="px-6 py-3.5">冻结原因</th>
+                <th className="px-6 py-3.5">冻结时间</th>
+                <th className="px-6 py-3.5">操作管理员</th>
+                <th className="px-6 py-3.5">最后登录</th>
+                <th className="px-6 py-3.5">注册时间</th>
+                <th className="px-6 py-3.5">更新时间</th>
+                <th className="px-6 py-3.5 text-right">管控操作</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-200">
+              {loading ? (
+                <tr><td colSpan={16} className="px-6 py-8 text-center text-neutral-500">正在加载用户记录...</td></tr>
+              ) : users.length === 0 ? (
+                <tr><td colSpan={16} className="px-6 py-8 text-center text-neutral-500">未检索到匹配的用户</td></tr>
+              ) : (
+                users.map((u, idx) => (
+                  <tr key={`user-row-${u.id ?? idx}-${idx}`} className="hover:bg-neutral-50/80 transition-colors">
+                    <td className="px-6 py-4 font-mono text-neutral-500 text-xs">#{u.id}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <img 
+                          src={resolveImageUrl(u.avatar)} 
+                          alt={u.nickName} 
+                          className="w-9 h-9 rounded-full object-cover border border-neutral-200 shadow-2xs"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=60';
+                          }}
+                        />
                         <div className="font-bold text-neutral-900 text-sm">{u.nickName}</div>
-                        <div className="text-xs text-neutral-500">{u.email}</div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    {u.role === 1 || (u.role as unknown) === 'admin' || (u.role as unknown) === '1' ? (
-                      <span className="px-2.5 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded-full text-xs font-bold">超级管理员</span>
-                    ) : (
-                      <span className="px-2.5 py-1 bg-neutral-100 text-neutral-600 rounded-full text-xs font-semibold">普通创作者</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    {u.status === 1 ? (
-                      <span className="px-3 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded-full text-xs font-bold flex items-center gap-1 w-fit">
-                        <Lock className="w-3.5 h-3.5" /> 已封禁冻结
-                      </span>
-                    ) : (
-                      <span className="px-3 py-1 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full text-xs font-bold flex items-center gap-1 w-fit">
-                        <Unlock className="w-3.5 h-3.5" /> 正常使用
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-right space-x-1.5">
-                    <button
-                      onClick={() => handleOpenLogs(u)}
-                      title="查看封禁记录"
-                      className="px-2.5 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-full text-xs font-semibold transition-colors cursor-pointer inline-flex items-center gap-1"
-                    >
-                      <History className="w-3.5 h-3.5" /> 日志
-                    </button>
-
-                    <button
-                      onClick={() => handleToggleAdminRole(u)}
-                      title={u.role === 1 ? "撤销管理员" : "提升为管理员"}
-                      className={`px-2.5 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer inline-flex items-center gap-1 ${
-                        u.role === 1 || (u.role as unknown) === 'admin'
-                          ? 'bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200'
-                          : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'
-                      }`}
-                    >
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      {u.role === 1 || (u.role as unknown) === 'admin' ? '撤权' : '设管理员'}
-                    </button>
-
-                    {u.status === 1 ? (
+                    </td>
+                    <td className="px-6 py-4 text-neutral-500 text-xs">{u.email || '-'}</td>
+                    <td className="px-6 py-4 text-neutral-500 text-xs">{(u as any).phone || '-'}</td>
+                    <td className="px-6 py-4 text-neutral-500 text-xs">{getGenderLabel((u as any).gender)}</td>
+                    <td className="px-6 py-4 text-neutral-500 text-xs">{(u as any).birthday || '-'}</td>
+                    <td className="px-6 py-4 text-neutral-500 text-xs max-w-[120px] truncate" title={(u as any).signature || ''}>
+                      {(u as any).signature || '-'}
+                    </td>
+                    <td className="px-6 py-4">
+                      {u.role === 1 || (u.role as unknown) === 'admin' || (u.role as unknown) === '1' ? (
+                        <span className="px-2.5 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded-full text-xs font-bold">超级管理员</span>
+                      ) : (
+                        <span className="px-2.5 py-1 bg-neutral-100 text-neutral-600 rounded-full text-xs font-semibold">普通创作者</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      {u.status === 1 ? (
+                        <span className="px-3 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded-full text-xs font-bold flex items-center gap-1 w-fit">
+                          <Lock className="w-3.5 h-3.5" /> 已封禁冻结
+                        </span>
+                      ) : (
+                        <span className="px-3 py-1 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full text-xs font-bold flex items-center gap-1 w-fit">
+                          <Unlock className="w-3.5 h-3.5" /> 正常使用
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-neutral-500 text-xs max-w-[120px] truncate" title={(u as any).frozenReason || ''}>
+                      {(u as any).frozenReason || '-'}
+                    </td>
+                    <td className="px-6 py-4 text-neutral-500 text-xs">{formatDate((u as any).frozenAt)}</td>
+                    <td className="px-6 py-4 text-neutral-500 text-xs">
+                      {(u as any).frozenBy ? `管理员 #${(u as any).frozenBy}` : '-'}
+                    </td>
+                    <td className="px-6 py-4 text-neutral-500 text-xs">{formatDate((u as any).lastLoginAt)}</td>
+                    <td className="px-6 py-4 text-neutral-500 text-xs">{formatDate(u.createdAt)}</td>
+                    <td className="px-6 py-4 text-neutral-500 text-xs">{formatDate((u as any).updatedAt)}</td>
+                    <td className="px-6 py-4 text-right space-x-1.5">
                       <button
-                        onClick={() => handleUnfreeze(u)}
-                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+                        onClick={() => handleOpenLogs(u)}
+                        title="查看封禁记录"
+                        className="px-2.5 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-full text-xs font-semibold transition-colors cursor-pointer inline-flex items-center gap-1"
                       >
-                        解封
+                        <History className="w-3.5 h-3.5" /> 日志
                       </button>
-                    ) : (
+
                       <button
-                        onClick={() => {
-                          setSelectedUser(u);
-                          setIsFreezeModalOpen(true);
-                        }}
-                        className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-full text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+                        onClick={() => handleToggleAdminRole(u)}
+                        title={u.role === 1 ? "撤销管理员" : "提升为管理员"}
+                        className={`px-2.5 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer inline-flex items-center gap-1 ${
+                          u.role === 1 || (u.role as unknown) === 'admin'
+                            ? 'bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200'
+                            : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'
+                        }`}
                       >
-                        冻结
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        {u.role === 1 || (u.role as unknown) === 'admin' ? '撤权' : '设管理员'}
                       </button>
-                    )}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+
+                      {u.status === 1 ? (
+                        <button
+                          onClick={() => handleUnfreeze(u)}
+                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+                        >
+                          解封
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setSelectedUser(u);
+                            setIsFreezeModalOpen(true);
+                          }}
+                          className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-full text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+                        >
+                          冻结
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Freeze Logs Modal */}

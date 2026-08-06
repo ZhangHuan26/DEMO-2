@@ -116,7 +116,7 @@ export const AdminCategoriesPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-6 w-full">
       <div className="flex items-center justify-between border-b border-neutral-200 pb-4">
         <div>
           <h1 className="text-2xl font-bold text-neutral-900 flex items-center gap-2">
@@ -163,15 +163,19 @@ export const AdminCategoriesPage: React.FC = () => {
               <th className="px-6 py-3.5">描述</th>
               <th className="px-6 py-3.5">类型</th>
               <th className="px-6 py-3.5">排序权重</th>
+              <th className="px-6 py-3.5">内容数量</th>
+              <th className="px-6 py-3.5">创建时间</th>
               <th className="px-6 py-3.5 text-right">操作</th>
+
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-200">
             {loading ? (
-              <tr><td colSpan={7} className="px-6 py-8 text-center text-neutral-500">正在加载分类字典...</td></tr>
+              <tr><td colSpan={9} className="px-6 py-8 text-center text-neutral-500">正在加载分类字典...</td></tr>
             ) : categories.length === 0 ? (
-              <tr><td colSpan={7} className="px-6 py-8 text-center text-neutral-500">暂未配置分类</td></tr>
+              <tr><td colSpan={9} className="px-6 py-8 text-center text-neutral-500">暂未配置分类</td></tr>
             ) : (
+
               categories.map((c, idx) => {
                 const meta = TYPE_META[(c.type as CategoryType) || activeType];
                 const Icon = meta.icon;
@@ -197,7 +201,12 @@ export const AdminCategoriesPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 font-mono text-amber-600 font-bold">{c.sortOrder || 0}</td>
+                    <td className="px-6 py-4 font-mono text-neutral-600 font-bold">{(c as any).articleCount ?? (c as any).count ?? 0}</td>
+                    <td className="px-6 py-4 text-neutral-500 text-xs">
+                      {(c as any).createdAt ? new Date((c as any).createdAt).toLocaleString('zh-CN') : '-'}
+                    </td>
                     <td className="px-6 py-4 text-right space-x-2">
+
                       <button
                         onClick={() => handleOpenEdit(c)}
                         className="p-2 text-neutral-600 hover:text-[#0057FF] rounded-full hover:bg-neutral-100 transition-colors cursor-pointer"

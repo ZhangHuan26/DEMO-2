@@ -28,8 +28,36 @@ export const AdminLogsPage: React.FC = () => {
     loadLogs();
   }, []);
 
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleString('zh-CN');
+  };
+
+  const getTargetTypeName = (type: any) => {
+    if (typeof type === 'string') {
+      const map: Record<string, string> = {
+        'article': '文章',
+        'video': '视频',
+        'file': '文件',
+        'comment': '评论',
+        'user': '用户'
+      };
+      return map[type] || type;
+    }
+    const map: Record<number, string> = {
+      0: '文章',
+      1: '视频',
+      2: '文件',
+      3: '文章评论',
+      4: '视频评论',
+      5: '文件评论',
+      6: '用户'
+    };
+    return map[Number(type)] || '作品';
+  };
+
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-6 w-full">
       <div className="border-b border-neutral-200 pb-4">
         <h1 className="text-2xl font-bold text-neutral-900 flex items-center gap-2">
           <History className="w-6 h-6 text-purple-600" /> 审计日志轨迹
@@ -57,71 +85,79 @@ export const AdminLogsPage: React.FC = () => {
       </div>
 
       <div className="bg-white border border-neutral-200/90 rounded-2xl overflow-hidden shadow-xs">
-        {activeTab === 'freeze' ? (
-          <table className="w-full text-left text-sm text-neutral-800">
-            <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-600 text-xs font-bold font-mono">
-              <tr>
-                <th className="px-6 py-3.5">日志 ID</th>
-                <th className="px-6 py-3.5">被封禁用户</th>
-                <th className="px-6 py-3.5">操作管理员</th>
-                <th className="px-6 py-3.5">封禁时长</th>
-                <th className="px-6 py-3.5">封禁原因</th>
-                <th className="px-6 py-3.5">操作时间</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-200 font-mono text-xs">
-              {loading ? (
-                <tr><td colSpan={6} className="px-6 py-8 text-center text-neutral-500 font-sans">正在加载审计日志...</td></tr>
-              ) : freezeLogs.length === 0 ? (
-                <tr><td colSpan={6} className="px-6 py-8 text-center text-neutral-500 font-sans">暂无账号封禁记录</td></tr>
-              ) : (
-                freezeLogs.map((log, idx) => (
-                  <tr key={`flog-row-${log.id ?? idx}-${idx}`} className="hover:bg-neutral-50/80">
-                    <td className="px-6 py-4 text-neutral-500">#{log.id}</td>
-                    <td className="px-6 py-4 font-bold text-neutral-900">{log.user?.nickName ? `${log.user.nickName} (#${log.userId})` : `用户 #${log.userId}`}</td>
-                    <td className="px-6 py-4 text-rose-600 font-bold">管理员 #{log.adminId || (log as any).operatorId || 2}</td>
-                    <td className="px-6 py-4 text-amber-600 font-bold">{(log as any).durationDays ? ((log as any).durationDays === 9999 ? '永久封禁' : `${(log as any).durationDays} 天`) : '永久/长期'}</td>
-                    <td className="px-6 py-4 text-neutral-700 max-w-xs truncate font-sans text-xs">{log.reason}</td>
-                    <td className="px-6 py-4 text-neutral-500 text-xs">{new Date(log.createdAt).toLocaleString()}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        ) : (
-          <table className="w-full text-left text-sm text-neutral-800">
-            <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-600 text-xs font-bold font-mono">
-              <tr>
-                <th className="px-6 py-3.5">日志 ID</th>
-                <th className="px-6 py-3.5">处置动作</th>
-                <th className="px-6 py-3.5">目标对象</th>
-                <th className="px-6 py-3.5">处理原因</th>
-                <th className="px-6 py-3.5">操作管理员</th>
-                <th className="px-6 py-3.5">操作时间</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-200 font-mono text-xs">
-              {loading ? (
-                <tr><td colSpan={6} className="px-6 py-8 text-center text-neutral-500 font-sans">正在加载处置日志...</td></tr>
-              ) : moderationLogs.length === 0 ? (
-                <tr><td colSpan={6} className="px-6 py-8 text-center text-neutral-500 font-sans">暂无内容处置记录</td></tr>
-              ) : (
-                moderationLogs.map((log, idx) => (
-                  <tr key={`mlog-row-${log.id ?? idx}-${idx}`} className="hover:bg-neutral-50/80">
-                    <td className="px-6 py-4 text-neutral-500">#{log.id}</td>
-                    <td className="px-6 py-4 text-rose-600 font-bold font-sans">
-                      {log.action === 'hide' ? '下架/隐藏' : log.action === 'unhide' ? '解除隐藏' : log.action}
-                    </td>
-                    <td className="px-6 py-4 font-bold text-neutral-900 font-sans">{log.targetType} #{log.targetId}</td>
-                    <td className="px-6 py-4 text-neutral-700 max-w-xs truncate font-sans text-xs">{log.reason || '管理员违规处置'}</td>
-                    <td className="px-6 py-4 text-[#0057FF] font-bold font-sans">{log.adminName || `管理员 #${log.adminId || (log as any).operatorId || 2}`}</td>
-                    <td className="px-6 py-4 text-neutral-500 text-xs">{new Date(log.createdAt).toLocaleString()}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        )}
+        <div className="overflow-x-auto">
+          {activeTab === 'freeze' ? (
+            <table className="w-full text-left text-sm text-neutral-800 whitespace-nowrap">
+              <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-600 text-xs font-bold font-mono">
+                <tr>
+                  <th className="px-6 py-3.5">日志 ID</th>
+                  <th className="px-6 py-3.5">被封禁用户</th>
+                  <th className="px-6 py-3.5">操作管理员</th>
+                  <th className="px-6 py-3.5">封禁时长</th>
+                  <th className="px-6 py-3.5">封禁原因</th>
+                  <th className="px-6 py-3.5">关联举报</th>
+                  <th className="px-6 py-3.5">操作时间</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-200 font-mono text-xs">
+                {loading ? (
+                  <tr><td colSpan={7} className="px-6 py-8 text-center text-neutral-500 font-sans">正在加载审计日志...</td></tr>
+                ) : freezeLogs.length === 0 ? (
+                  <tr><td colSpan={7} className="px-6 py-8 text-center text-neutral-500 font-sans">暂无账号封禁记录</td></tr>
+                ) : (
+                  freezeLogs.map((log, idx) => (
+                    <tr key={`flog-row-${log.id ?? idx}-${idx}`} className="hover:bg-neutral-50/80">
+                      <td className="px-6 py-4 text-neutral-500">#{log.id}</td>
+                      <td className="px-6 py-4 font-bold text-neutral-900">{log.user?.nickName ? `${log.user.nickName} (#${log.userId})` : `用户 #${log.userId}`}</td>
+                      <td className="px-6 py-4 text-rose-600 font-bold">管理员 #{log.adminId || (log as any).operatorId || 2}</td>
+                      <td className="px-6 py-4 text-amber-600 font-bold">{(log as any).durationDays ? ((log as any).durationDays === 9999 ? '永久封禁' : `${(log as any).durationDays} 天`) : '永久/长期'}</td>
+                      <td className="px-6 py-4 text-neutral-700 max-w-xs truncate font-sans text-xs">{log.reason}</td>
+                      <td className="px-6 py-4 text-neutral-500">
+                        {log.reportId ? <span className="px-2 py-0.5 bg-blue-50 text-[#0057FF] border border-blue-200 rounded-full text-[10px] font-bold">举报 #{log.reportId}</span> : '-'}
+                      </td>
+                      <td className="px-6 py-4 text-neutral-500 text-xs">{formatDate(log.createdAt)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          ) : (
+            <table className="w-full text-left text-sm text-neutral-800 whitespace-nowrap">
+              <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-600 text-xs font-bold font-mono">
+                <tr>
+                  <th className="px-6 py-3.5">日志 ID</th>
+                  <th className="px-6 py-3.5">处置动作</th>
+                  <th className="px-6 py-3.5">目标类型</th>
+                  <th className="px-6 py-3.5">目标对象</th>
+                  <th className="px-6 py-3.5">处理原因</th>
+                  <th className="px-6 py-3.5">操作管理员</th>
+                  <th className="px-6 py-3.5">操作时间</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-200 font-mono text-xs">
+                {loading ? (
+                  <tr><td colSpan={7} className="px-6 py-8 text-center text-neutral-500 font-sans">正在加载处置日志...</td></tr>
+                ) : moderationLogs.length === 0 ? (
+                  <tr><td colSpan={7} className="px-6 py-8 text-center text-neutral-500 font-sans">暂无内容处置记录</td></tr>
+                ) : (
+                  moderationLogs.map((log, idx) => (
+                    <tr key={`mlog-row-${log.id ?? idx}-${idx}`} className="hover:bg-neutral-50/80">
+                      <td className="px-6 py-4 text-neutral-500">#{log.id}</td>
+                      <td className="px-6 py-4 text-rose-600 font-bold font-sans">
+                        {log.action === 'hide' ? '下架/隐藏' : log.action === 'unhide' ? '解除隐藏' : log.action === 'allow_download' ? '允许下载' : log.action === 'disallow_download' ? '禁止下载' : log.action}
+                      </td>
+                      <td className="px-6 py-4 text-neutral-500 font-sans">{getTargetTypeName(log.targetType)}</td>
+                      <td className="px-6 py-4 font-bold text-neutral-900 font-sans">#{log.targetId}</td>
+                      <td className="px-6 py-4 text-neutral-700 max-w-xs truncate font-sans text-xs">{log.reason || '管理员违规处置'}</td>
+                      <td className="px-6 py-4 text-[#0057FF] font-bold font-sans">{log.adminName || `管理员 #${log.adminId || (log as any).operatorId || 2}`}</td>
+                      <td className="px-6 py-4 text-neutral-500 text-xs">{formatDate(log.createdAt)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
     </div>
   );

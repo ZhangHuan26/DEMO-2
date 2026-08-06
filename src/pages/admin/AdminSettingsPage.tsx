@@ -43,7 +43,7 @@ export const AdminSettingsPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 w-full max-w-4xl">
       <div className="flex items-center justify-between border-b border-neutral-200 pb-4">
         <div>
           <h1 className="text-2xl font-bold text-neutral-900 flex items-center gap-2">

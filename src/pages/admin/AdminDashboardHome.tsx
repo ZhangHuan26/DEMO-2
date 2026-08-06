@@ -43,7 +43,7 @@ export const AdminDashboardHome: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8 max-w-7xl">
+    <div className="space-y-8 w-full">
       <div>
         <h1 className="text-2xl font-extrabold text-neutral-900 flex items-center gap-2">
           <ShieldAlert className="w-7 h-7 text-[#0057FF]" />

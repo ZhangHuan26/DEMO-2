@@ -148,6 +148,7 @@ export const MyWorksPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  // 所有 hooks 必须在函数顶层调用，不能在条件判断后面
   const [activeTab, setActiveTab] = useState<'all' | 'articles' | 'videos' | 'files'>('all');
   
   const [articles, setArticles] = useState<Article[]>([]);
@@ -163,6 +164,7 @@ export const MyWorksPage: React.FC = () => {
     file?: FileItem;
   } | null>(null);
 
+  // useEffect 必须在所有 useState 后面调用
   useEffect(() => {
     if (!user) {
       navigate('/login');

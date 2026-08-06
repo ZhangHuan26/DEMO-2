@@ -36,8 +36,26 @@ export const AdminAppealsPage: React.FC = () => {
     }
   };
 
+  const getTargetTypeName = (type: number) => {
+    switch (type) {
+      case 0: return '文章';
+      case 1: return '视频';
+      case 2: return '文件';
+      case 3: return '文章评论';
+      case 4: return '视频评论';
+      case 5: return '文件评论';
+      case 6: return '用户';
+      default: return '作品';
+    }
+  };
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleString('zh-CN');
+  };
+
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-6 w-full">
       <div className="border-b border-neutral-200 pb-4">
         <h1 className="text-2xl font-bold text-neutral-900 flex items-center gap-2">
           <MessageSquare className="w-6 h-6 text-emerald-600" /> 申诉复核队列
@@ -57,7 +75,13 @@ export const AdminAppealsPage: React.FC = () => {
                 <div className="flex items-center gap-3 font-mono">
                   <span className="font-bold text-neutral-900">申诉单 #{a.id}</span>
                   <span className="text-neutral-500 text-xs">用户 #{a.userId}</span>
+                  {(a as any).targetType !== undefined && (
+                    <span className="px-2.5 py-0.5 bg-blue-50 text-[#0057FF] border border-blue-200 rounded-full text-xs font-bold font-mono">
+                      {getTargetTypeName((a as any).targetType)} #{a.targetId}
+                    </span>
+                  )}
                   {a.freezeLogId && <span className="px-2.5 py-0.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-full text-xs font-bold font-mono">关联违规日志 #{a.freezeLogId}</span>}
+                  {(a as any).moderationLogId && <span className="px-2.5 py-0.5 bg-amber-50 text-amber-600 border border-amber-200 rounded-full text-xs font-bold font-mono">关联审核日志 #{a.moderationLogId}</span>}
                 </div>
 
                 <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
@@ -71,6 +95,13 @@ export const AdminAppealsPage: React.FC = () => {
               <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-200/80 text-sm text-neutral-800">
                 <span className="text-xs text-neutral-500 font-bold block mb-1">申诉理由：</span>
                 {a.reason}
+              </div>
+
+              <div className="flex items-center gap-4 text-xs text-neutral-500">
+                <span>提交时间：<span className="font-mono">{formatDate(a.createdAt)}</span></span>
+                {(a as any).handledAt && (
+                  <span>处理时间：<span className="font-mono">{formatDate((a as any).handledAt)}</span></span>
+                )}
               </div>
 
               {a.status === 0 ? (

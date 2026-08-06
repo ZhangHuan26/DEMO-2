@@ -90,7 +90,7 @@ export const LoginPage: React.FC = () => {
         <div className="text-center text-xs text-neutral-500">
           还没有账号？{' '}
           <Link to="/register" className="text-[#0057FF] hover:underline font-bold">
-            注册新会员账号
+            注册新账号
           </Link>
         </div>
       </div>

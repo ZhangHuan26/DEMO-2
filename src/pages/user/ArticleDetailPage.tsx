@@ -267,13 +267,14 @@ export const ArticleDetailPage: React.FC = () => {
 
         {/* Liked & Favorited Creator Avatar Wall */}
         <LikeFavoriteAvatarWall
+          contentId={article.id}
+          contentType="article"
           likeCount={article.likeCount}
           favoriteCount={article.favoriteCount}
           isLiked={article.isLiked}
           isFavorited={article.isFavorited}
           currentUser={user}
           workTitle={article.title}
-          workType="article"
         />
 
         {/* Community Discussion Section */}

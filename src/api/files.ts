@@ -336,6 +336,12 @@ export const filesApi = {
     return res.data;
   },
 
+  // 9.6.1 PUT /admin/files/{id}/unhide
+  unhideFile: async (id: number, reason?: string) => {
+    const res = await apiClient.put(`/admin/files/${id}/unhide`, { reason: reason || '恢复正常' });
+    return res.data;
+  },
+
   // 9.7 PUT /admin/files/{id}/allow-download
   toggleAllowDownload: async (id: number, allowDownload: number) => {
     const res = await apiClient.put(`/admin/files/${id}/allow-download`, { allowDownload });
@@ -447,5 +453,41 @@ export const filesApi = {
   unlikeComment: async (id: number) => {
     const res = await apiClient.delete(`/file-comments/${id}/like`);
     return res.data;
+  },
+
+  // 24.1 GET /files/{id}/likes - 点赞该文件的用户列表
+  getFileLikes: async (id: number) => {
+    try {
+      const res = await apiClient.get(`/files/${id}/likes`);
+      const result = res.data;
+      const data = result?.data ?? result;
+      return Array.isArray(data) ? data : (data?.list || []);
+    } catch {
+      return [];
+    }
+  },
+
+  // 24.2 GET /files/{id}/favorites - 收藏该文件的用户列表
+  getFileFavorites: async (id: number) => {
+    try {
+      const res = await apiClient.get(`/files/${id}/favorites`);
+      const result = res.data;
+      const data = result?.data ?? result;
+      return Array.isArray(data) ? data : (data?.list || []);
+    } catch {
+      return [];
+    }
+  },
+
+  // 24.3 GET /files/{id}/duplicates - 既点赞又收藏该文件的用户列表
+  getFileDuplicates: async (id: number) => {
+    try {
+      const res = await apiClient.get(`/files/${id}/duplicates`);
+      const result = res.data;
+      const data = result?.data ?? result;
+      return Array.isArray(data) ? data : (data?.list || []);
+    } catch {
+      return [];
+    }
   }
 };

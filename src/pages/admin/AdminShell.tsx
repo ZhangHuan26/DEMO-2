@@ -112,9 +112,9 @@ export const AdminShell: React.FC = () => {
       </header>
 
       {/* Main Container with Left Sidebar */}
-      <div className="flex-1 flex max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 gap-8">
+      <div className="flex-1 flex w-full mx-auto px-5 py-6 gap-6">
         {/* Left Sidebar Menu */}
-        <aside className="w-60 shrink-0 hidden md:block">
+        <aside className="w-56 shrink-0 hidden md:block">
           <div className="bg-white border border-neutral-200/80 rounded-3xl p-3 shadow-2xs sticky top-22">
             <div className="px-3 py-2 text-[11px] font-black text-neutral-400 uppercase tracking-wider font-mono">
               系统功能导航
@@ -164,7 +164,7 @@ export const AdminShell: React.FC = () => {
         </div>
 
         {/* Right Content Area */}
-        <main className="flex-1 min-w-0">
+        <main className="flex-1 min-w-0 overflow-x-auto">
           <Outlet />
         </main>
       </div>

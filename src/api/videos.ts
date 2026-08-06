@@ -367,5 +367,41 @@ export const videosApi = {
   updateAllowDownload: async (id: number, allowDownload: number) => {
     const res = await apiClient.put(`/videos/${id}/allow-download`, { allowDownload });
     return res.data;
+  },
+
+  // 25.1 GET /videos/{id}/likes - 点赞该视频的用户列表
+  getVideoLikes: async (id: number) => {
+    try {
+      const res = await apiClient.get(`/videos/${id}/likes`);
+      const result = res.data;
+      const data = result?.data ?? result;
+      return Array.isArray(data) ? data : (data?.list || []);
+    } catch {
+      return [];
+    }
+  },
+
+  // 25.2 GET /videos/{id}/favorites - 收藏该视频的用户列表
+  getVideoFavorites: async (id: number) => {
+    try {
+      const res = await apiClient.get(`/videos/${id}/favorites`);
+      const result = res.data;
+      const data = result?.data ?? result;
+      return Array.isArray(data) ? data : (data?.list || []);
+    } catch {
+      return [];
+    }
+  },
+
+  // 25.3 GET /videos/{id}/duplicates - 既点赞又收藏该视频的用户列表
+  getVideoDuplicates: async (id: number) => {
+    try {
+      const res = await apiClient.get(`/videos/${id}/duplicates`);
+      const result = res.data;
+      const data = result?.data ?? result;
+      return Array.isArray(data) ? data : (data?.list || []);
+    } catch {
+      return [];
+    }
   }
 };

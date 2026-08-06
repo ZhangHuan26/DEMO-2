@@ -68,6 +68,11 @@ export const AdminArticlesPage: React.FC = () => {
     }
   };
 
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleString('zh-CN');
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between border-b border-neutral-200 pb-4">
@@ -96,97 +101,133 @@ export const AdminArticlesPage: React.FC = () => {
       </div>
 
       <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
-        <table className="w-full text-left text-xs">
-          <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-500 font-semibold uppercase">
-            <tr>
-              <th className="py-3 px-4">文章信息</th>
-              <th className="py-3 px-4">作者</th>
-              <th className="py-3 px-4">状态</th>
-              <th className="py-3 px-4">数据（浏览/点赞）</th>
-              <th className="py-3 px-4 text-right">操作</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-200 text-neutral-700">
-            {loading ? (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs whitespace-nowrap">
+            <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-500 font-semibold uppercase">
               <tr>
-                <td colSpan={5} className="text-center py-8 text-neutral-400">
-                  正在加载文章列表...
-                </td>
+                <th className="py-3 px-4">ID</th>
+                <th className="py-3 px-4">标题</th>
+                <th className="py-3 px-4">作者</th>
+                <th className="py-3 px-4">分类</th>
+                <th className="py-3 px-4">状态</th>
+                <th className="py-3 px-4">隐藏状态</th>
+                <th className="py-3 px-4">浏览量</th>
+                <th className="py-3 px-4">点赞数</th>
+                <th className="py-3 px-4">收藏数</th>
+                <th className="py-3 px-4">评论数</th>
+                <th className="py-3 px-4">创建时间</th>
+                <th className="py-3 px-4">更新时间</th>
+                <th className="py-3 px-4">隐藏原因</th>
+                <th className="py-3 px-4">隐藏时间</th>
+                <th className="py-3 px-4">操作管理员</th>
+                <th className="py-3 px-4 text-right">操作</th>
               </tr>
-            ) : articles.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="text-center py-8 text-neutral-400">
-                  未找到相关文章记录
-                </td>
-              </tr>
-            ) : (
-              articles.map((article) => (
-                <tr key={article.id} className="hover:bg-neutral-50/50 transition-colors">
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={article.coverImage || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=200&auto=format&fit=crop'}
-                        alt={article.title}
-                        className="w-12 h-12 rounded-lg object-cover bg-neutral-100 shrink-0"
-                      />
-                      <div>
-                        <p className="font-bold text-neutral-900 line-clamp-1">{article.title}</p>
-                        <p className="text-[11px] text-neutral-400">{article.createdAt ? new Date(article.createdAt).toLocaleDateString('zh-CN') : ''}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4 font-medium">{article.author?.nickName || '未知用户'}</td>
-                  <td className="py-3 px-4">
-                    {article.isHidden === 1 ? (
-                      <span className="px-2 py-0.5 bg-rose-50 text-rose-600 rounded-full font-semibold text-[11px]">
-                        已隐藏
-                      </span>
-                    ) : article.status === 1 ? (
-                      <span className="px-2 py-0.5 bg-amber-50 text-amber-600 rounded-full font-semibold text-[11px]">
-                        私密
-                      </span>
-                    ) : (
-                      <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full font-semibold text-[11px]">
-                        公开正常
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-3 px-4 text-neutral-500">
-                    {article.viewCount ?? 0} 次浏览 / {article.likeCount ?? 0} 点赞
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      {article.isHidden === 1 ? (
-                        <button
-                          onClick={() => handleUnhide(article.id)}
-                          className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
-                          title="恢复显示"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleHideClick(article)}
-                          className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
-                          title="隐藏此文章"
-                        >
-                          <EyeOff className="w-4 h-4" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleDelete(article.id)}
-                        className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                        title="删除文章"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+            </thead>
+            <tbody className="divide-y divide-neutral-200 text-neutral-700">
+              {loading ? (
+                <tr>
+                  <td colSpan={16} className="text-center py-8 text-neutral-400">
+                    正在加载文章列表...
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : articles.length === 0 ? (
+                <tr>
+                  <td colSpan={16} className="text-center py-8 text-neutral-400">
+                    未找到相关文章记录
+                  </td>
+                </tr>
+              ) : (
+                articles.map((article) => (
+                  <tr key={article.id} className="hover:bg-neutral-50/50 transition-colors">
+                    <td className="py-3 px-4 font-mono text-neutral-500">#{article.id}</td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={article.coverImage || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=200&auto=format&fit=crop'}
+                          alt={article.title}
+                          className="w-10 h-10 rounded-lg object-cover bg-neutral-100 shrink-0"
+                        />
+                        <div>
+                          <p className="font-bold text-neutral-900 line-clamp-1 max-w-[180px]">{article.title}</p>
+                          <p className="text-[11px] text-neutral-400 max-w-[180px] line-clamp-1">{article.content?.slice(0, 50) || '-'}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 font-medium">
+                      {(article as any).creator || article.author?.nickName || `用户 #${article.userId}`}
+                    </td>
+                    <td className="py-3 px-4 text-neutral-500">
+                      {article.categoryName || article.category?.name || `#${article.categoryId}` || '-'}
+                    </td>
+                    <td className="py-3 px-4">
+                      {article.status === 1 ? (
+                        <span className="px-2 py-0.5 bg-amber-50 text-amber-600 rounded-full font-semibold text-[11px]">
+                          私密
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full font-semibold text-[11px]">
+                          公开
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4">
+                      {article.isHidden === 1 ? (
+                        <span className="px-2 py-0.5 bg-rose-50 text-rose-600 rounded-full font-semibold text-[11px]">
+                          已隐藏
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full font-semibold text-[11px]">
+                          正常
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-neutral-500">{article.viewCount ?? 0}</td>
+                    <td className="py-3 px-4 text-neutral-500">{article.likeCount ?? 0}</td>
+                    <td className="py-3 px-4 text-neutral-500">{article.favoriteCount ?? 0}</td>
+                    <td className="py-3 px-4 text-neutral-500">{article.commentCount ?? 0}</td>
+                    <td className="py-3 px-4 text-neutral-500">{formatDate(article.createdAt)}</td>
+                    <td className="py-3 px-4 text-neutral-500">{formatDate(article.updatedAt)}</td>
+                    <td className="py-3 px-4 text-neutral-500 max-w-[120px] truncate" title={(article as any).frozenReason || ''}>
+                      {(article as any).frozenReason || '-'}
+                    </td>
+                    <td className="py-3 px-4 text-neutral-500">{formatDate((article as any).frozenAt)}</td>
+                    <td className="py-3 px-4 text-neutral-500">
+                      {(article as any).frozenByName || ((article as any).frozenBy ? `管理员 #${(article as any).frozenBy}` : '-')}
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {article.isHidden === 1 ? (
+                          <button
+                            onClick={() => handleUnhide(article.id)}
+                            className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                            title="恢复显示"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleHideClick(article)}
+                            className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
+                            title="隐藏此文章"
+                          >
+                            <EyeOff className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDelete(article.id)}
+                          className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                          title="删除文章"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {showHideModal && (

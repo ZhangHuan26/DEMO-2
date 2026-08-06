@@ -267,13 +267,14 @@ export const VideoDetailPage: React.FC = () => {
 
         {/* Liked & Favorited Creator Avatar Wall */}
         <LikeFavoriteAvatarWall
+          contentId={video.id}
+          contentType="video"
           likeCount={video.likeCount}
           favoriteCount={video.favoriteCount}
           isLiked={video.isLiked}
           isFavorited={video.isFavorited}
           currentUser={user}
           workTitle={video.title}
-          workType="video"
         />
 
         {/* Video Comments */}

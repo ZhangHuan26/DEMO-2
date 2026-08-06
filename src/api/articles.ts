@@ -265,5 +265,53 @@ export const articlesApi = {
     } catch {
       return { total: 0, list: [] };
     }
+  },
+
+  // 23.2 GET /articles/{id}/likes - 点赞该文章的用户列表
+  getArticleLikes: async (id: number) => {
+    try {
+      const res = await apiClient.get(`/articles/${id}/likes`);
+      const result = res.data;
+      const data = result?.data ?? result;
+      return Array.isArray(data) ? data : (data?.list || []);
+    } catch {
+      return [];
+    }
+  },
+
+  // 23.3 GET /articles/{id}/favorites - 收藏该文章的用户列表
+  getArticleFavorites: async (id: number) => {
+    try {
+      const res = await apiClient.get(`/articles/${id}/favorites`);
+      const result = res.data;
+      const data = result?.data ?? result;
+      return Array.isArray(data) ? data : (data?.list || []);
+    } catch {
+      return [];
+    }
+  },
+
+  // 23.4 GET /articles/{id}/duplicates - 既点赞又收藏该文章的用户列表
+  getArticleDuplicates: async (id: number) => {
+    try {
+      const res = await apiClient.get(`/articles/${id}/duplicates`);
+      const result = res.data;
+      const data = result?.data ?? result;
+      return Array.isArray(data) ? data : (data?.list || []);
+    } catch {
+      return [];
+    }
+  },
+
+  // 26.1 GET /admin/article-categories - 管理员文章分类列表（分页）
+  getAdminArticleCategories: async (params?: { keyword?: string; page?: number; size?: number }) => {
+    try {
+      const res = await apiClient.get('/admin/article-categories', { params });
+      const result = res.data;
+      const data = result?.data ?? result;
+      return data && typeof data === 'object' && 'list' in data ? data : { total: 0, list: Array.isArray(data) ? data : [] };
+    } catch {
+      return { total: 0, list: [] };
+    }
   }
 };

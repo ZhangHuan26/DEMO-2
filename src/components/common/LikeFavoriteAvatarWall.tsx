@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ThumbsUp, Star, Users } from 'lucide-react';
 import { User } from '../../types';
-import { authApi } from '../../api/auth';
+import { articlesApi } from '../../api/articles';
+import { videosApi } from '../../api/videos';
+import { filesApi } from '../../api/files';
 import { resolveImageUrl } from '../../config/env';
 import { openAuthorModal } from './AuthorProfileModal';
 
@@ -15,41 +17,72 @@ interface InteractorUser {
 }
 
 interface LikeFavoriteAvatarWallProps {
+  contentId: number;
+  contentType: 'article' | 'video' | 'file';
   likeCount?: number;
   favoriteCount?: number;
   isLiked?: boolean;
   isFavorited?: boolean;
   currentUser?: User | null;
   workTitle?: string;
-  workType?: 'article' | 'video' | 'file';
 }
 
 export const LikeFavoriteAvatarWall: React.FC<LikeFavoriteAvatarWallProps> = ({
+  contentId,
+  contentType,
   likeCount = 0,
   favoriteCount = 0,
   isLiked = false,
   isFavorited = false,
   currentUser,
-  workTitle,
-  workType = 'article'
+  workTitle
 }) => {
   const [activeTab, setActiveTab] = useState<'all' | 'like' | 'favorite'>('all');
-  const [communityUsers, setCommunityUsers] = useState<User[]>([]);
+  const [likeUsers, setLikeUsers] = useState<User[]>([]);
+  const [favoriteUsers, setFavoriteUsers] = useState<User[]>([]);
+  const [duplicateUsers, setDuplicateUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // 通过后端真实 API 接口 GET /users/recommend 获取推荐创作者列表数据
+  // 通过真实的 API 接口获取点赞/收藏用户列表
   useEffect(() => {
     let isMounted = true;
-    const fetchCreators = async () => {
+    const fetchUsers = async () => {
       setLoading(true);
       try {
-        const users = await authApi.getRecommendedCreators();
-        if (isMounted && Array.isArray(users)) {
-          setCommunityUsers(users);
+        let likesPromise, favoritesPromise, duplicatesPromise;
+        
+        // 根据内容类型调用不同的 API
+        if (contentType === 'article') {
+          likesPromise = articlesApi.getArticleLikes(contentId);
+          favoritesPromise = articlesApi.getArticleFavorites(contentId);
+          duplicatesPromise = articlesApi.getArticleDuplicates(contentId);
+        } else if (contentType === 'video') {
+          likesPromise = videosApi.getVideoLikes(contentId);
+          favoritesPromise = videosApi.getVideoFavorites(contentId);
+          duplicatesPromise = videosApi.getVideoDuplicates(contentId);
+        } else {
+          likesPromise = filesApi.getFileLikes(contentId);
+          favoritesPromise = filesApi.getFileFavorites(contentId);
+          duplicatesPromise = filesApi.getFileDuplicates(contentId);
         }
-      } catch {
+
+        const [likes, favorites, duplicates] = await Promise.all([
+          likesPromise,
+          favoritesPromise,
+          duplicatesPromise
+        ]);
+
         if (isMounted) {
-          setCommunityUsers([]);
+          setLikeUsers(Array.isArray(likes) ? likes : []);
+          setFavoriteUsers(Array.isArray(favorites) ? favorites : []);
+          setDuplicateUsers(Array.isArray(duplicates) ? duplicates : []);
+        }
+      } catch (error) {
+        console.error('[LikeFavoriteAvatarWall] 获取用户列表失败:', error);
+        if (isMounted) {
+          setLikeUsers([]);
+          setFavoriteUsers([]);
+          setDuplicateUsers([]);
         }
       } finally {
         if (isMounted) {
@@ -57,9 +90,9 @@ export const LikeFavoriteAvatarWall: React.FC<LikeFavoriteAvatarWallProps> = ({
         }
       }
     };
-    fetchCreators();
+    fetchUsers();
     return () => { isMounted = false; };
-  }, []);
+  }, [contentId, contentType]);
 
   // 构建互动人员列表
   const interactors: InteractorUser[] = [];
@@ -75,20 +108,41 @@ export const LikeFavoriteAvatarWall: React.FC<LikeFavoriteAvatarWallProps> = ({
     });
   }
 
-  // 2. 从后端 API 获得的社区用户中追加
-  communityUsers.forEach((u, index) => {
-    if (currentUser && u.id === currentUser.id) return; // 避免与当前登录用户重复
-
-    let actionType: 'like' | 'favorite' | 'both' = 'like';
-    if (index % 3 === 0) actionType = 'both';
-    else if (index % 2 === 1) actionType = 'favorite';
-
+  // 2. 添加既点赞又收藏的用户
+  duplicateUsers.forEach((u) => {
+    if (currentUser && u.id === currentUser.id) return; // 避免重复
     interactors.push({
       id: u.id,
-      nickName: u.nickName || `创作者_${u.id}`,
+      nickName: u.nickName || `用户_${u.id}`,
       avatar: u.avatar,
-      signature: u.signature || '数字设计爱好者',
-      actionType
+      signature: u.signature || '',
+      actionType: 'both'
+    });
+  });
+
+  // 3. 添加只点赞的用户
+  likeUsers.forEach((u) => {
+    if (currentUser && u.id === currentUser.id) return;
+    if (duplicateUsers.some(d => d.id === u.id)) return; // 避免重复
+    interactors.push({
+      id: u.id,
+      nickName: u.nickName || `用户_${u.id}`,
+      avatar: u.avatar,
+      signature: u.signature || '',
+      actionType: 'like'
+    });
+  });
+
+  // 4. 添加只收藏的用户
+  favoriteUsers.forEach((u) => {
+    if (currentUser && u.id === currentUser.id) return;
+    if (duplicateUsers.some(d => d.id === u.id)) return; // 避免重复
+    interactors.push({
+      id: u.id,
+      nickName: u.nickName || `用户_${u.id}`,
+      avatar: u.avatar,
+      signature: u.signature || '',
+      actionType: 'favorite'
     });
   });
 
@@ -99,8 +153,13 @@ export const LikeFavoriteAvatarWall: React.FC<LikeFavoriteAvatarWallProps> = ({
     return true;
   });
 
-  const displayLikeCount = Math.max(likeCount, interactors.filter(i => i.actionType === 'like' || i.actionType === 'both').length);
-  const displayFavoriteCount = Math.max(favoriteCount, interactors.filter(i => i.actionType === 'favorite' || i.actionType === 'both').length);
+  const displayLikeCount = Math.max(likeCount, likeUsers.length);
+  const displayFavoriteCount = Math.max(favoriteCount, favoriteUsers.length);
+
+  // 如果没有任何互动，不显示头像墙
+  if (!loading && interactors.length === 0) {
+    return null;
+  }
 
   return (
     <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-5 shadow-xl text-white">
@@ -161,7 +220,7 @@ export const LikeFavoriteAvatarWall: React.FC<LikeFavoriteAvatarWallProps> = ({
       </div>
 
       {/* 头像墙展示区 */}
-      {loading && interactors.length === 0 ? (
+      {loading ? (
         <div className="flex items-center gap-2 py-1">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="w-8 h-8 rounded-full bg-neutral-800 animate-pulse" />
@@ -169,66 +228,70 @@ export const LikeFavoriteAvatarWall: React.FC<LikeFavoriteAvatarWallProps> = ({
         </div>
       ) : (
         <div className="flex flex-wrap gap-2 items-center pt-1">
-          {filteredInteractors.map((person) => {
-            const isSelf = currentUser && person.id === currentUser.id;
-            const userAvatar = resolveImageUrl(person.avatar);
-            return (
-              <button
-                key={`wall-user-${person.id}`}
-                onClick={() => openAuthorModal(person.id)}
-                className="relative group shrink-0 cursor-pointer"
-                title={`${person.nickName} - ${person.signature || '创作者'}`}
-              >
-                <div className={`w-8 h-8 rounded-full overflow-hidden border transition-all group-hover:scale-110 relative shadow-xs ${
-                  isSelf
-                    ? 'border-[#0057FF] ring-2 ring-[#0057FF]/30'
-                    : 'border-neutral-700 group-hover:border-[#0057FF]'
-                }`}>
-                  {userAvatar ? (
-                    <img
-                      src={userAvatar}
-                      alt={person.nickName}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-neutral-800 flex items-center justify-center font-bold text-neutral-300 text-xs">
-                      {(person.nickName || '?').charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                </div>
+          {filteredInteractors.length === 0 ? (
+            <p className="text-sm text-neutral-400">暂无互动用户</p>
+          ) : (
+            filteredInteractors.map((person) => {
+              const isSelf = currentUser && person.id === currentUser.id;
+              const userAvatar = resolveImageUrl(person.avatar);
+              return (
+                <button
+                  key={`wall-user-${person.id}`}
+                  onClick={() => openAuthorModal(person.id)}
+                  className="relative group shrink-0 cursor-pointer"
+                  title={`${person.nickName}${person.signature ? ` - ${person.signature}` : ''}`}
+                >
+                  <div className={`w-8 h-8 rounded-full overflow-hidden border transition-all group-hover:scale-110 relative shadow-xs ${
+                    isSelf
+                      ? 'border-[#0057FF] ring-2 ring-[#0057FF]/30'
+                      : 'border-neutral-700 group-hover:border-[#0057FF]'
+                  }`}>
+                    {userAvatar ? (
+                      <img
+                        src={userAvatar}
+                        alt={person.nickName}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-neutral-800 flex items-center justify-center font-bold text-neutral-300 text-xs">
+                        {(person.nickName || '?').charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
 
-                {/* 右下角 Action 标识 Badge */}
-                <span className={`absolute -bottom-0.5 -right-0.5 p-0.5 rounded-full text-white shadow-xs border border-neutral-900 ${
-                  person.actionType === 'both'
-                    ? 'bg-gradient-to-r from-[#0057FF] to-amber-500'
-                    : person.actionType === 'like'
-                    ? 'bg-[#0057FF]'
-                    : 'bg-amber-500'
-                }`}>
-                  {person.actionType === 'favorite' ? (
-                    <Star className="w-2 h-2 fill-current" />
-                  ) : (
-                    <ThumbsUp className="w-2 h-2 fill-current" />
-                  )}
-                </span>
+                  {/* 右下角 Action 标识 Badge */}
+                  <span className={`absolute -bottom-0.5 -right-0.5 p-0.5 rounded-full text-white shadow-xs border border-neutral-900 ${
+                    person.actionType === 'both'
+                      ? 'bg-gradient-to-r from-[#0057FF] to-amber-500'
+                      : person.actionType === 'like'
+                      ? 'bg-[#0057FF]'
+                      : 'bg-amber-500'
+                  }`}>
+                    {person.actionType === 'favorite' ? (
+                      <Star className="w-2 h-2 fill-current" />
+                    ) : (
+                      <ThumbsUp className="w-2 h-2 fill-current" />
+                    )}
+                  </span>
 
-                {/* Hover Tooltip Float Window */}
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-neutral-900 border border-neutral-800 text-white rounded-xl text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-xl z-50 flex flex-col items-center">
-                  <span className="font-bold text-white flex items-center gap-1">
-                    {person.nickName}
-                    {isSelf && <span className="text-[10px] text-[#0057FF] font-mono">(我)</span>}
-                  </span>
-                  <span className="text-[10px] text-neutral-400 mt-0.5">
-                    {person.actionType === 'both' ? '❤️ 赞赏并 ⭐ 收藏了作品' : person.actionType === 'like' ? '❤️ 赞赏了作品' : '⭐ 收藏了作品'}
-                  </span>
-                  <div className="w-2 h-2 bg-neutral-900 border-r border-b border-neutral-800 rotate-45 -mb-3 mt-1" />
-                </div>
-              </button>
-            );
-          })}
+                  {/* Hover Tooltip Float Window */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-neutral-900 border border-neutral-800 text-white rounded-xl text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-xl z-50 flex flex-col items-center">
+                    <span className="font-bold text-white flex items-center gap-1">
+                      {person.nickName}
+                      {isSelf && <span className="text-[10px] text-[#0057FF] font-mono">(我)</span>}
+                    </span>
+                    <span className="text-[10px] text-neutral-400 mt-0.5">
+                      {person.actionType === 'both' ? '❤️ 赞赏并 ⭐ 收藏了作品' : person.actionType === 'like' ? '❤️ 赞赏了作品' : '⭐ 收藏了作品'}
+                    </span>
+                    <div className="w-2 h-2 bg-neutral-900 border-r border-b border-neutral-800 rotate-45 -mb-3 mt-1" />
+                  </div>
+                </button>
+              );
+            })
+          )}
         </div>
       )}
     </div>

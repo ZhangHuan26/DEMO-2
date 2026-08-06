@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 
 
 import { Link, useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { Plus, Bell, MessageSquare, User as UserIcon, Bookmark, BarChart3, Settings, LogOut, Folder, ShieldAlert, Compass } from 'lucide-react';
+import { Plus, Bell, MessageSquare, User as UserIcon, Bookmark, BarChart3, Settings, LogOut, Folder, ShieldAlert, Compass, Layers, Users } from 'lucide-react';
+
 import { useAuth } from '../../context/AuthContext';
 import { CreateWorkModal } from '../common/CreateWorkModal';
 import { NoticeModal } from '../common/NoticeModal';
@@ -20,6 +21,21 @@ export const UserShell: React.FC = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatTargetUser, setChatTargetUser] = useState<User | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+  // 监听打开聊天的自定义事件
+  useEffect(() => {
+    const handleOpenChat = (e: CustomEvent<{ user: User }>) => {
+      if (e.detail?.user) {
+        setChatTargetUser(e.detail.user);
+        setIsChatOpen(true);
+      }
+    };
+    
+    window.addEventListener('open-chat-with-user' as any, handleOpenChat as any);
+    return () => {
+      window.removeEventListener('open-chat-with-user' as any, handleOpenChat as any);
+    };
+  }, []);
 
   useEffect(() => {
     const handleOpenAuthorModal = (e: CustomEvent<{ userId: number }>) => {
@@ -137,12 +153,27 @@ export const UserShell: React.FC = () => {
 
                   <div className="py-1">
                     <Link
+                      to="/me/profile"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="px-4 py-2 hover:bg-neutral-50 text-neutral-700 hover:text-black flex items-center gap-2.5 transition-colors font-medium"
+                    >
+                      <UserIcon className="w-4 h-4 text-[#0057FF]" /> 个人信息
+                    </Link>
+                    <Link
                       to="/me/works"
                       onClick={() => setIsUserMenuOpen(false)}
                       className="px-4 py-2 hover:bg-neutral-50 text-neutral-700 hover:text-black flex items-center gap-2.5 transition-colors font-medium"
                     >
-                      <UserIcon className="w-4 h-4 text-[#0057FF]" /> 我的作品与个人主页
+                      <Layers className="w-4 h-4 text-[#0057FF]" /> 我的作品与个人主页
                     </Link>
+                    <Link
+                      to="/discover-friends"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="px-4 py-2 hover:bg-neutral-50 text-neutral-700 hover:text-black flex items-center gap-2.5 transition-colors font-medium"
+                    >
+                      <Users className="w-4 h-4 text-emerald-500" /> 发现好友
+                    </Link>
+
                     <Link
                       to="/me/favorites"
                       onClick={() => setIsUserMenuOpen(false)}

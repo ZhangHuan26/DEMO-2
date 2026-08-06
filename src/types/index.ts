@@ -12,6 +12,7 @@ export interface User {
   status: UserStatus;
   frozenReason?: string;
   frozenAt?: string;
+  frozenBy?: number;
   gender: number; // 0: Secret, 1: Male, 2: Female
   birthday?: string;
   signature?: string;
@@ -23,10 +24,14 @@ export interface User {
   worksCount?: number;
   favoriteCount?: number;
   commentCount?: number;
+  likeCount?: number;
   workCount?: number;
   createdAt?: string;
+  updatedAt?: string;
+  lastLoginAt?: string;
   isFollowing?: boolean;
 }
+
 
 export interface Category {
   id: number;

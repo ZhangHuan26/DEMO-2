@@ -16,6 +16,9 @@ import { ArticleDetailPage } from './pages/user/ArticleDetailPage';
 import { VideoDetailPage } from './pages/user/VideoDetailPage';
 import { FileDetailPage } from './pages/user/FileDetailPage';
 import { UserProfilePage } from './pages/user/UserProfilePage';
+import { MyProfilePage } from './pages/user/MyProfilePage';
+import { DiscoverFriendsPage } from './pages/user/DiscoverFriendsPage';
+
 import { CreatorDashboardPage } from './pages/user/CreatorDashboardPage';
 import { NotificationsPage } from './pages/user/NotificationsPage';
 import { SettingsPage } from './pages/user/SettingsPage';
@@ -82,7 +85,10 @@ export function App() {
 
             {/* User Account & Center */}
             <Route path="users/:id" element={<UserProfilePage />} />
+            <Route path="me/profile" element={<MyProfilePage />} />
             <Route path="me/works" element={<MyWorksPage />} />
+            <Route path="discover-friends" element={<DiscoverFriendsPage />} />
+
             <Route path="creator" element={<CreatorDashboardPage />} />
             <Route path="notifications" element={<NotificationsPage />} />
             <Route path="settings" element={<SettingsPage />} />

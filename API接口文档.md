@@ -393,6 +393,47 @@
 | size | int | 否 | 10 | 每页条数 |
 
 **返回字段（data）**：分页的 `VideoCardVO` 列表（见 14.1 视频列表字段）
+
+---
+
+### 3.9 我的主页数据汇总
+
+- **接口**：`GET /users/me/summary`
+- **鉴权**：登录
+- **功能**：返回当录用户的主页统计信息，包括基础资料、内容统计（文章/视频/文件数）、互动统计（收藏/评论/收到的点赞总数）、社交统计（粉丝数/关注数）。方便前端"个人中心"一屏展示。
+  前登
+**传参**：无
+
+**返回字段（data）**：
+
+| 字段 | 类型 | 注释 |
+| --- | --- | --- |
+| id | Long | 用户id |
+| nickName | String | 昵称 |
+| avatar | String | 头像链接 |
+| gender | Integer | 性别：0-保密 1-男 2-女 |
+| signature | String | 个性签名 |
+| role | Integer | 角色：0-普通用户 1-管理员 |
+| status | Integer | 账号状态：0-正常 1-已冻结 |
+| email | String | 邮箱（仅本人可见） |
+| phone | String | 手机号（仅本人可见） |
+| birthday | LocalDate | 出生日期（仅本人可见） |
+| createdAt | LocalDateTime | 注册时间 |
+| lastLoginAt | LocalDateTime | 最后登录时间 |
+| updatedAt | LocalDateTime | 资料更新时间 |
+| frozenReason | String | 冻结原因 |
+| frozenAt | LocalDateTime | 冻结时间 |
+| frozenBy | Long | 执行冻结操作的管理员id |
+| articleCount | Long | 文章数 |
+| videoCount | Long | 视频数 |
+| fileCount | Long | 文件数 |
+| worksCount | Long | 作品总数（文章+视频+文件） |
+| favoriteCount | Long | 我收藏的作品总数（文章+视频+文件） |
+| commentCount | Long | 我发表的作品评论总数（文章+视频+文件评论） |
+| likeCount | Long | 我的作品收到的点赞总数（文章+视频+文件） |
+| followerCount | Long | 粉丝数 |
+| followingCount | Long | 关注数 |
+
 # 博客系统接口功能详解（二）
 
 > 本文档基于后端实际代码（Controller / DTO / Entity）整理，罗列所有接口的功能、能做什么、返回字段名及注释、传参及注释。
@@ -3225,6 +3266,7 @@ Authorization: Bearer {token}
 | --- | --- |
 | 视频发布 | 作为 `POST /videos` 的 videoUrl 参数 |
 | 视频更新 | 作为 `PUT /videos/{id}` 的 videoUrl 参数 |
+
 
 
 # 博客系统接口功能详解（五）

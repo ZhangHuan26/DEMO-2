@@ -148,7 +148,6 @@ export const MyWorksPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // 所有 hooks 必须在函数顶层调用，不能在条件判断后面
   const [activeTab, setActiveTab] = useState<'all' | 'articles' | 'videos' | 'files'>('all');
   
   const [articles, setArticles] = useState<Article[]>([]);
@@ -163,8 +162,6 @@ export const MyWorksPage: React.FC = () => {
     video?: Video;
     file?: FileItem;
   } | null>(null);
-
-  // useEffect 必须在所有 useState 后面调用
   useEffect(() => {
     if (!user) {
       navigate('/login');
@@ -364,10 +361,10 @@ export const MyWorksPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center space-y-3">
-          <div className="w-8 h-8 border-3 border-[#0057FF] border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-sm text-neutral-600 font-medium">正在加载您的作品和个人信息...</p>
+          <div className="w-10 h-10 border-4 border-[#0057FF] border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-neutral-600 font-medium">加载作品中...</p>
         </div>
       </div>
     );
@@ -428,92 +425,52 @@ export const MyWorksPage: React.FC = () => {
     ? formattedFiles 
     : allWorks;
 
-  const stats = {
-    totalWorks: allWorks.length,
-    publicWorks: allWorks.filter(w => w.status === 0).length,
-    privateWorks: allWorks.filter(w => w.status === 1).length,
-    totalViews: allWorks.reduce((sum, w) => sum + w.viewCount, 0),
-    totalLikes: allWorks.reduce((sum, w) => sum + w.likeCount, 0),
-    totalFavorites: allWorks.reduce((sum, w) => sum + (w.favoriteCount || 0), 0),
-    totalComments: allWorks.reduce((sum, w) => sum + (w.commentCount || 0), 0)
-  };
-
   return (
-    <div className="min-h-screen bg-neutral-50">
-      {/* 主要内容区 */}
-      <div className="max-w-7xl mx-auto px-6 pt-8 pb-12">
-        {/* 作品统计卡片 */}
-        <div className="bg-white rounded-2xl shadow-md border border-neutral-200 p-6 mb-8">
-          <h2 className="text-lg font-bold text-neutral-900 mb-4">作品统计概览</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-            <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
-              <div className="text-2xl font-bold text-[#0057FF]">{stats.totalWorks}</div>
-              <div className="text-xs text-neutral-600 mt-1">作品总数</div>
-            </div>
-            <div className="text-center p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl">
-              <div className="text-2xl font-bold text-emerald-600">{stats.publicWorks}</div>
-              <div className="text-xs text-neutral-600 mt-1">公开作品</div>
-            </div>
-            <div className="text-center p-4 bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl">
-              <div className="text-2xl font-bold text-amber-600">{stats.privateWorks}</div>
-              <div className="text-xs text-neutral-600 mt-1">私人作品</div>
-            </div>
-            <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl">
-              <div className="text-2xl font-bold text-purple-600">{stats.totalViews}</div>
-              <div className="text-xs text-neutral-600 mt-1">总浏览量</div>
-            </div>
-            <div className="text-center p-4 bg-gradient-to-br from-rose-50 to-rose-100 rounded-xl">
-              <div className="text-2xl font-bold text-rose-600">{stats.totalLikes}</div>
-              <div className="text-xs text-neutral-600 mt-1">总点赞数</div>
-            </div>
-            <div className="text-center p-4 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl">
-              <div className="text-2xl font-bold text-indigo-600">{stats.totalFavorites}</div>
-              <div className="text-xs text-neutral-600 mt-1">总收藏数</div>
-            </div>
-            <div className="text-center p-4 bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl">
-              <div className="text-2xl font-bold text-teal-600">{stats.totalComments}</div>
-              <div className="text-xs text-neutral-600 mt-1">总评论数</div>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-blue-50/20 to-neutral-50">
+      <div className="max-w-7xl mx-auto px-6 py-10">
+        {/* 页面标题 */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-black text-neutral-900 mb-2">我的作品</h1>
+          <p className="text-sm text-neutral-600">管理和编辑您的全部创作内容</p>
         </div>
 
         {/* 作品区域 */}
-        <div className="bg-white rounded-2xl shadow-md border border-neutral-200 overflow-hidden">
+        <div className="bg-white rounded-3xl shadow-xl shadow-neutral-200/50 border border-neutral-200/60 overflow-hidden">
           {/* 顶部操作栏 */}
-          <div className="p-6 border-b border-neutral-200">
+          <div className="p-6 border-b border-neutral-200 bg-gradient-to-r from-neutral-50 to-white">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-neutral-900 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-[#0057FF]" />
-                我的作品管理
+                <Sparkles className="w-6 h-6 text-[#0057FF]" />
+                作品管理
               </h2>
               <button
                 onClick={() => setIsCreateModalOpen(true)}
-                className="px-4 py-2 bg-[#0057FF] hover:bg-[#0046CC] text-white font-bold rounded-lg flex items-center gap-2 transition-all cursor-pointer"
+                className="px-5 py-2.5 bg-gradient-to-r from-[#0057FF] to-blue-600 hover:from-[#0046CC] hover:to-blue-700 text-white font-bold rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-[#0057FF]/30"
               >
-                <Plus className="w-4 h-4" />
-                创建新作品
+                <Plus className="w-5 h-5" />
+                创建作品
               </button>
             </div>
           </div>
 
           {/* 标签页切换 */}
-          <div className="px-6 pt-4 flex items-center gap-2 border-b border-neutral-200">
+          <div className="px-6 pt-5 flex items-center gap-3 border-b border-neutral-200 bg-neutral-50/50">
             <button
               onClick={() => setActiveTab('all')}
-              className={`px-4 py-2 font-bold text-sm rounded-t-lg transition-all ${
+              className={`px-5 py-3 font-bold text-sm rounded-t-xl transition-all ${
                 activeTab === 'all' 
-                  ? 'bg-[#0057FF] text-white' 
-                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                  ? 'bg-white text-[#0057FF] shadow-lg shadow-neutral-200/50 -mb-px border border-b-white border-neutral-200' 
+                  : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100/50'
               }`}
             >
-              全部 ({allWorks.length})
+              全部作品 ({allWorks.length})
             </button>
             <button
               onClick={() => setActiveTab('articles')}
-              className={`px-4 py-2 font-bold text-sm rounded-t-lg transition-all flex items-center gap-2 ${
+              className={`px-5 py-3 font-bold text-sm rounded-t-xl transition-all flex items-center gap-2 ${
                 activeTab === 'articles' 
-                  ? 'bg-[#0057FF] text-white' 
-                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                  ? 'bg-white text-[#0057FF] shadow-lg shadow-neutral-200/50 -mb-px border border-b-white border-neutral-200' 
+                  : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100/50'
               }`}
             >
               <FileText className="w-4 h-4" />
@@ -521,10 +478,10 @@ export const MyWorksPage: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('videos')}
-              className={`px-4 py-2 font-bold text-sm rounded-t-lg transition-all flex items-center gap-2 ${
+              className={`px-5 py-3 font-bold text-sm rounded-t-xl transition-all flex items-center gap-2 ${
                 activeTab === 'videos' 
-                  ? 'bg-[#0057FF] text-white' 
-                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                  ? 'bg-white text-[#0057FF] shadow-lg shadow-neutral-200/50 -mb-px border border-b-white border-neutral-200' 
+                  : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100/50'
               }`}
             >
               <VideoIcon className="w-4 h-4" />
@@ -532,26 +489,27 @@ export const MyWorksPage: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('files')}
-              className={`px-4 py-2 font-bold text-sm rounded-t-lg transition-all flex items-center gap-2 ${
+              className={`px-5 py-3 font-bold text-sm rounded-t-xl transition-all flex items-center gap-2 ${
                 activeTab === 'files' 
-                  ? 'bg-[#0057FF] text-white' 
-                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                  ? 'bg-white text-[#0057FF] shadow-lg shadow-neutral-200/50 -mb-px border border-b-white border-neutral-200' 
+                  : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100/50'
               }`}
             >
               <Folder className="w-4 h-4" />
-              文件 ({files.length})
+              资源 ({files.length})
             </button>
           </div>
 
           {/* 作品网格 */}
-          <div className="p-6">
+          <div className="p-8 bg-neutral-50/30">
             {displayedWorks.length === 0 ? (
-              <div className="py-20 text-center">
-                <div className="text-6xl mb-4">📁</div>
-                <p className="text-neutral-500 mb-4">暂无作品</p>
+              <div className="py-32 text-center">
+                <div className="text-7xl mb-6">📝</div>
+                <h3 className="text-xl font-bold text-neutral-800 mb-2">暂无作品</h3>
+                <p className="text-sm text-neutral-500 mb-6">开始创作您的第一个作品吧</p>
                 <button
                   onClick={() => setIsCreateModalOpen(true)}
-                  className="px-6 py-3 bg-[#0057FF] text-white font-bold rounded-lg hover:bg-[#0046CC] transition-all cursor-pointer"
+                  className="px-8 py-3 bg-gradient-to-r from-[#0057FF] to-blue-600 text-white font-bold rounded-xl hover:from-[#0046CC] hover:to-blue-700 transition-all cursor-pointer shadow-lg shadow-[#0057FF]/30"
                 >
                   创建第一个作品
                 </button>

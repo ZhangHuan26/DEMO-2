@@ -63,6 +63,15 @@ export const authApi = {
     return data;
   },
 
+  // 3.9 GET /users/me/summary - 我的主页数据汇总
+  getMySummary: async (): Promise<User> => {
+    const res = await apiClient.get('/users/me/summary');
+    const result = res.data;
+    const data = result?.data ?? result;
+    return data;
+  },
+
+
   // 2.2 PUT /users/me
   updateProfile: async (data: Partial<User>): Promise<User> => {
     try {

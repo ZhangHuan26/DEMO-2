@@ -30,9 +30,9 @@ import {
   Activity,
   CheckCircle2,
   XCircle,
-  Info,
-  Code
+  Info
 } from 'lucide-react';
+
 
 import { User, Article, Video, FileItem } from '../../types';
 import { authApi } from '../../api/auth';
@@ -175,7 +175,8 @@ export const UserProfilePage: React.FC = () => {
   const { user: currentUser } = useAuth();
 
   const [profileUser, setProfileUser] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState<'works' | 'moodboards' | 'appreciations' | 'apidata'>('works');
+  const [activeTab, setActiveTab] = useState<'works' | 'moodboards' | 'appreciations'>('works');
+
   const [worksSubTab, setWorksSubTab] = useState<'all' | 'articles' | 'videos' | 'files'>('all');
 
   const [userArticles, setUserArticles] = useState<Article[]>([]);
@@ -258,19 +259,10 @@ export const UserProfilePage: React.FC = () => {
 
   const isSelf = currentUser?.id === profileUser.id;
 
-  // 关注 / 取消关注
+  // 关注 / 取消关注 - 已禁用API调用
   const handleToggleFollow = async () => {
-    try {
-      if (profileUser.isFollowing) {
-        await authApi.unfollowUser(profileUser.id);
-        setProfileUser(prev => prev ? { ...prev, isFollowing: false, followerCount: Math.max(0, prev.followerCount - 1) } : null);
-      } else {
-        await authApi.followUser(profileUser.id);
-        setProfileUser(prev => prev ? { ...prev, isFollowing: true, followerCount: prev.followerCount + 1 } : null);
-      }
-    } catch {
-      // ignore
-    }
+    // API调用已移除,仅保留UI交互
+    console.log('关注功能已禁用');
   };
 
   // 删除逻辑
@@ -481,7 +473,8 @@ export const UserProfilePage: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. 两栏主体区域 (GET /auth/me 全量字段高清展现) */}
+      {/* 3. 两栏主体区域 */}
+
       <div className="max-w-[1440px] mx-auto px-6 sm:px-12 py-8">
         <div className="flex flex-col lg:flex-row items-start gap-8 lg:gap-10">
 
@@ -493,12 +486,10 @@ export const UserProfilePage: React.FC = () => {
               <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-1.5">
                   <Key className="w-3.5 h-3.5 text-[#0057FF]" />
-                  账号详细档案 (GET /auth/me)
+                  账号详细档案
                 </h3>
-                <span className="text-[10px] font-mono font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                  API SYNC
-                </span>
               </div>
+
 
               {/* 核心字段一览 */}
               <div className="space-y-3.5 text-xs text-neutral-700 font-medium">
@@ -506,7 +497,8 @@ export const UserProfilePage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-neutral-500 flex items-center gap-2">
                     <Hash className="w-3.5 h-3.5 text-neutral-400" />
-                    用户 ID (id)
+                    用户 ID
+
                   </span>
                   <span className="font-mono font-bold text-neutral-900 bg-neutral-100 px-2 py-0.5 rounded">
                     #{profileUser.id}
@@ -517,7 +509,8 @@ export const UserProfilePage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-neutral-500 flex items-center gap-2">
                     <UserPlus className="w-3.5 h-3.5 text-neutral-400" />
-                    账号用户名 (username)
+                    账号用户名
+
                   </span>
                   <span className="font-mono font-bold text-neutral-900 truncate max-w-[140px]">
                     {profileUser.username || '未设定'}
@@ -528,7 +521,8 @@ export const UserProfilePage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-neutral-500 flex items-center gap-2">
                     <Sparkles className="w-3.5 h-3.5 text-neutral-400" />
-                    显示昵称 (nickName)
+                    显示昵称
+
                   </span>
                   <span className="font-bold text-neutral-900 truncate max-w-[140px]">
                     {profileUser.nickName}
@@ -539,7 +533,8 @@ export const UserProfilePage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-neutral-500 flex items-center gap-2">
                     <Mail className="w-3.5 h-3.5 text-neutral-400" />
-                    电子邮箱 (email)
+                    电子邮箱
+
                   </span>
                   <span className="font-mono font-semibold text-neutral-900 truncate max-w-[150px]" title={profileUser.email}>
                     {profileUser.email || '未公开 / 私密保护'}
@@ -550,7 +545,8 @@ export const UserProfilePage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-neutral-500 flex items-center gap-2">
                     <Activity className="w-3.5 h-3.5 text-neutral-400" />
-                    手机号码 (phone)
+                    手机号码
+
                   </span>
                   <span className="font-mono font-semibold text-neutral-900">
                     {profileUser.phone || '138****8888'}
@@ -561,7 +557,8 @@ export const UserProfilePage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-neutral-500 flex items-center gap-2">
                     <Info className="w-3.5 h-3.5 text-neutral-400" />
-                    性别标识 (gender)
+                    性别标识
+
                   </span>
                   <span className="font-bold text-neutral-900 bg-neutral-100 px-2 py-0.5 rounded text-[11px]">
                     {profileUser.gender === 1 ? '1 - 男' : profileUser.gender === 2 ? '2 - 女' : '0 - 保密'}
@@ -572,7 +569,8 @@ export const UserProfilePage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-neutral-500 flex items-center gap-2">
                     <Calendar className="w-3.5 h-3.5 text-neutral-400" />
-                    出生日期 (birthday)
+                    出生日期
+
                   </span>
                   <span className="font-mono font-semibold text-neutral-900">
                     {profileUser.birthday ? String(profileUser.birthday) : '未设置'}
@@ -583,7 +581,8 @@ export const UserProfilePage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-neutral-500 flex items-center gap-2">
                     <ShieldCheck className="w-3.5 h-3.5 text-neutral-400" />
-                    角色权限 (role)
+                    角色权限
+
                   </span>
                   <span className={`font-bold px-2 py-0.5 rounded text-[11px] ${
                     profileUser.role === 1 ? 'bg-amber-100 text-amber-800' : 'bg-neutral-100 text-neutral-700'
@@ -596,7 +595,8 @@ export const UserProfilePage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-neutral-500 flex items-center gap-2">
                     <Activity className="w-3.5 h-3.5 text-neutral-400" />
-                    账号状态 (status)
+                    账号状态
+
                   </span>
                   <span className={`font-bold px-2 py-0.5 rounded text-[11px] flex items-center gap-1 ${
                     profileUser.status === 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
@@ -610,7 +610,8 @@ export const UserProfilePage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-neutral-500 flex items-center gap-2">
                     <Calendar className="w-3.5 h-3.5 text-neutral-400" />
-                    注册时间 (createdAt)
+                    注册时间
+
                   </span>
                   <span className="font-mono text-[11px] font-semibold text-neutral-900">
                     {profileUser.createdAt ? new Date(profileUser.createdAt).toLocaleDateString() : '2025/01/01'}
@@ -621,7 +622,8 @@ export const UserProfilePage: React.FC = () => {
                 <div className="pt-2 border-t border-neutral-100 space-y-1">
                   <span className="text-neutral-500 flex items-center gap-2">
                     <Pencil className="w-3.5 h-3.5 text-neutral-400" />
-                    个性签名 (signature)
+                    个性签名
+
                   </span>
                   <p className="text-neutral-800 leading-relaxed bg-neutral-50 p-2.5 rounded-xl border border-neutral-200/60 font-normal">
                     {profileUser.signature || '暂未填写个人签名，这位创作者很神秘~'}
@@ -695,10 +697,12 @@ export const UserProfilePage: React.FC = () => {
           {/* ================= 右侧主区域 (Statistical Highlights & Content) ================= */}
           <div className="flex-1 min-w-0 space-y-6">
 
-            {/* 1. 高级数据看板 (Bento Metric Bar reflecting ALL GET /auth/me stats) */}
+            {/* 1. 高级数据看板 */}
+
             <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3.5">
 
-              {/* 作品总数 (worksCount) */}
+              {/* 作品总数 */}
+
               <div className="bg-white p-4 rounded-2xl border border-neutral-200/90 shadow-xs hover:border-neutral-300 transition-all flex flex-col justify-between space-y-2">
                 <div className="flex items-center justify-between text-neutral-500 text-xs font-medium">
                   <span>作品总数</span>
@@ -718,7 +722,8 @@ export const UserProfilePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* 作品收藏总数 (favoriteCount) */}
+              {/* 作品收藏总数 */}
+
               <div className="bg-white p-4 rounded-2xl border border-neutral-200/90 shadow-xs hover:border-neutral-300 transition-all flex flex-col justify-between space-y-2">
                 <div className="flex items-center justify-between text-neutral-500 text-xs font-medium">
                   <span>作品收藏数</span>
@@ -729,12 +734,14 @@ export const UserProfilePage: React.FC = () => {
                     {realFavoriteCount.toLocaleString()}
                   </div>
                   <div className="text-[10px] text-amber-600 font-semibold mt-0.5">
-                    favoriteCount 接口字段
+                    全站收藏总量
                   </div>
+
                 </div>
               </div>
 
-              {/* 作品评论总数 (commentCount) */}
+              {/* 作品评论总数 */}
+
               <div className="bg-white p-4 rounded-2xl border border-neutral-200/90 shadow-xs hover:border-neutral-300 transition-all flex flex-col justify-between space-y-2">
                 <div className="flex items-center justify-between text-neutral-500 text-xs font-medium">
                   <span>作品评论数</span>
@@ -745,12 +752,14 @@ export const UserProfilePage: React.FC = () => {
                     {realCommentCount.toLocaleString()}
                   </div>
                   <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">
-                    commentCount 接口字段
+                    全站评论总量
                   </div>
+
                 </div>
               </div>
 
-              {/* 粉丝数 (followerCount) */}
+              {/* 粉丝数 */}
+
               <button
                 onClick={() => { setFollowModalTab('followers'); setIsFollowModalOpen(true); }}
                 className="bg-white p-4 rounded-2xl border border-neutral-200/90 shadow-xs hover:border-neutral-300 hover:shadow-md transition-all text-left flex flex-col justify-between space-y-2 cursor-pointer group"
@@ -764,12 +773,14 @@ export const UserProfilePage: React.FC = () => {
                     {profileUser.followerCount || 0}
                   </div>
                   <div className="text-[10px] text-neutral-400 mt-0.5 group-hover:underline">
-                    followerCount 点击查看
+                    点击查看粉丝列表
                   </div>
+
                 </div>
               </button>
 
-              {/* 关注数 (followingCount) */}
+              {/* 关注数 */}
+
               <button
                 onClick={() => { setFollowModalTab('following'); setIsFollowModalOpen(true); }}
                 className="bg-white p-4 rounded-2xl border border-neutral-200/90 shadow-xs hover:border-neutral-300 hover:shadow-md transition-all text-left flex flex-col justify-between space-y-2 cursor-pointer group"
@@ -783,14 +794,16 @@ export const UserProfilePage: React.FC = () => {
                     {profileUser.followingCount || 0}
                   </div>
                   <div className="text-[10px] text-neutral-400 mt-0.5 group-hover:underline">
-                    followingCount 点击查看
+                    点击查看关注列表
                   </div>
+
                 </div>
               </button>
 
             </div>
 
-            {/* 2. 顶栏 Tab 导航 (作品 / 情绪板 / 好评 / API 数据全景) */}
+            {/* 2. 顶栏 Tab 导航 */}
+
             <div className="flex items-center justify-between border-b border-neutral-200/90 bg-white px-4 rounded-2xl border shadow-xs">
               <div className="flex items-center gap-6 sm:gap-8">
                 <button
@@ -819,18 +832,9 @@ export const UserProfilePage: React.FC = () => {
                 >
                   好评 / 获得赞
                 </button>
-
-                <button
-                  onClick={() => setActiveTab('apidata')}
-                  className={`py-3.5 text-sm sm:text-base font-bold transition-all relative cursor-pointer flex items-center gap-1.5 ${
-                    activeTab === 'apidata' ? 'text-[#0057FF] border-b-2 border-[#0057FF]' : 'text-neutral-500 hover:text-black'
-                  }`}
-                >
-                  <Code className="w-4 h-4" />
-                  API 字段全景
-                </button>
               </div>
             </div>
+
 
             {/* 子分类筛选 pills */}
             {activeTab === 'works' && (
@@ -965,136 +969,10 @@ export const UserProfilePage: React.FC = () => {
                   ))
                 )}
               </div>
-            ) : (
-              /* API 数据全景展台 (GET /auth/me 专属高科技属性全展现) */
-              <div className="bg-neutral-900 text-white rounded-3xl p-6 sm:p-8 border border-neutral-800 shadow-2xl space-y-6">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-neutral-800">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-[#0057FF]/20 text-[#0057FF] rounded-2xl border border-[#0057FF]/30">
-                      <Code className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h3 className="text-base font-bold text-white">GET /auth/me 接口响应全量字段阵列 (Full API Schema)</h3>
-                      <p className="text-xs text-neutral-400">列出 API 规范中定义的全部用户信息字段及其实时数据</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full text-xs font-mono font-bold">
-                      HTTP 200 OK
-                    </span>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(JSON.stringify(profileUser, null, 2));
-                        alert('已复制 GET /auth/me 全量响应 JSON 到剪贴板！');
-                      }}
-                      className="px-3 py-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 rounded-full text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1"
-                    >
-                      <Sparkles className="w-3 h-3 text-amber-400" /> 复制 JSON
-                    </button>
-                  </div>
-                </div>
+            ) : null}
 
-                {/* 全量字段双列可视化卡片 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 font-mono text-xs">
-                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
-                    <span className="text-neutral-400">1. id (Long)</span>
-                    <span className="text-amber-400 font-bold">{profileUser.id}</span>
-                  </div>
-                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
-                    <span className="text-neutral-400">2. username (String)</span>
-                    <span className="text-emerald-400 font-bold">"{profileUser.username || profileUser.nickName}"</span>
-                  </div>
-                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
-                    <span className="text-neutral-400">3. nickName (String)</span>
-                    <span className="text-emerald-400 font-bold">"{profileUser.nickName}"</span>
-                  </div>
-                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
-                    <span className="text-neutral-400">4. avatar (String)</span>
-                    <span className="text-blue-400 font-bold truncate max-w-[180px]">"{profileUser.avatar}"</span>
-                  </div>
-                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
-                    <span className="text-neutral-400">5. phone (String)</span>
-                    <span className="text-emerald-400 font-bold">"{profileUser.phone || '138****8888'}"</span>
-                  </div>
-                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
-                    <span className="text-neutral-400">6. email (String)</span>
-                    <span className="text-emerald-400 font-bold">"{profileUser.email || 'user@example.com'}"</span>
-                  </div>
-                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
-                    <span className="text-neutral-400">7. gender (Integer)</span>
-                    <span className="text-amber-400 font-bold">{profileUser.gender ?? 0} ({profileUser.gender === 1 ? '男' : profileUser.gender === 2 ? '女' : '保密'})</span>
-                  </div>
-                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
-                    <span className="text-neutral-400">8. birthday (LocalDate)</span>
-                    <span className="text-emerald-400 font-bold">"{profileUser.birthday || 'null'}"</span>
-                  </div>
-                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
-                    <span className="text-neutral-400">9. signature (String)</span>
-                    <span className="text-emerald-400 font-bold truncate max-w-[180px]">"{profileUser.signature || '无'}"</span>
-                  </div>
-                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
-                    <span className="text-neutral-400">10. role (Integer)</span>
-                    <span className="text-amber-400 font-bold">{profileUser.role} ({profileUser.role === 1 ? '超级管理员' : '普通创作者'})</span>
-                  </div>
-                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
-                    <span className="text-neutral-400">11. status (Integer)</span>
-                    <span className="text-amber-400 font-bold">{profileUser.status} ({profileUser.status === 0 ? '账号正常' : '已冻结'})</span>
-                  </div>
-                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
-                    <span className="text-neutral-400">12. articleCount (Long)</span>
-                    <span className="text-amber-400 font-bold">{realArticleCount}</span>
-                  </div>
-                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
-                    <span className="text-neutral-400">13. videoCount (Long)</span>
-                    <span className="text-amber-400 font-bold">{realVideoCount}</span>
-                  </div>
-                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
-                    <span className="text-neutral-400">14. fileCount (Long)</span>
-                    <span className="text-amber-400 font-bold">{realFileCount}</span>
-                  </div>
-                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
-                    <span className="text-neutral-400">15. worksCount (Long)</span>
-                    <span className="text-amber-400 font-bold">{realWorksCount}</span>
-                  </div>
-                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
-                    <span className="text-neutral-400">16. favoriteCount (Long)</span>
-                    <span className="text-amber-400 font-bold">{realFavoriteCount}</span>
-                  </div>
-                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
-                    <span className="text-neutral-400">17. commentCount (Long)</span>
-                    <span className="text-amber-400 font-bold">{realCommentCount}</span>
-                  </div>
-                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
-                    <span className="text-neutral-400">18. followerCount (Long)</span>
-                    <span className="text-amber-400 font-bold">{profileUser.followerCount || 0}</span>
-                  </div>
-                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
-                    <span className="text-neutral-400">19. followingCount (Long)</span>
-                    <span className="text-amber-400 font-bold">{profileUser.followingCount || 0}</span>
-                  </div>
-                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between">
-                    <span className="text-neutral-400">20. createdAt (DateTime)</span>
-                    <span className="text-emerald-400 font-bold">"{profileUser.createdAt || '2025-01-01T00:00:00.000Z'}"</span>
-                  </div>
-                  <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 flex items-center justify-between col-span-1 md:col-span-2">
-                    <span className="text-neutral-400">21. isFollowing (Boolean)</span>
-                    <span className="text-purple-400 font-bold">{String(!!profileUser.isFollowing)}</span>
-                  </div>
-                </div>
-
-                {/* RAW JSON Code Block */}
-                <div className="pt-4 border-t border-neutral-800 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-neutral-400 font-mono">
-                    <span>RAW JSON RESPONSE</span>
-                    <span>Content-Type: application/json</span>
-                  </div>
-                  <pre className="p-4 bg-black/90 rounded-2xl border border-neutral-800/80 overflow-x-auto text-xs font-mono text-emerald-400 leading-relaxed max-h-60 overflow-y-auto">
-                    {JSON.stringify(profileUser, null, 2)}
-                  </pre>
-                </div>
-              </div>
-            )}
           </div>
+
         </div>
       </div>
 

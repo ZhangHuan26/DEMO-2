@@ -1,26 +1,6 @@
 import { apiClient } from './client';
 import { Conversation, Message } from '../types';
 import { LOCAL_WS_HOST } from '../config/env';
-import { mockUsers } from './mockData';
-
-let mockMessagesStore: Message[] = [
-  {
-    id: 1,
-    senderId: 2,
-    receiverId: 1,
-    content: 'Hi LunarStudio! Love your Neon Horizon interface project on LeapLunar04!',
-    isRead: 1,
-    createdAt: '2026-08-04T10:00:00Z'
-  },
-  {
-    id: 2,
-    senderId: 1,
-    receiverId: 2,
-    content: 'Thank you SystemAdmin! Appreciate the feedback.',
-    isRead: 1,
-    createdAt: '2026-08-04T10:05:00Z'
-  }
-];
 
 export const chatApi = {
   // 26.2 GET /chat/conversations/{peerId}
@@ -33,9 +13,7 @@ export const chatApi = {
       const list = Array.isArray(data) ? data : data?.list;
       return Array.isArray(list) ? list : [];
     } catch {
-      return mockMessagesStore.filter(
-        m => (m.senderId === peerId && m.receiverId === 1) || (m.senderId === 1 && m.receiverId === peerId)
-      );
+      return [];
     }
   },
 
@@ -49,63 +27,30 @@ export const chatApi = {
       const list = Array.isArray(data) ? data : data?.list;
       return Array.isArray(list) ? list : [];
     } catch {
-      return [
-        {
-          peerUser: mockUsers[1],
-          lastMessage: mockMessagesStore[mockMessagesStore.length - 1],
-          unreadCount: 0
-        },
-        {
-          peerUser: mockUsers[2],
-          lastMessage: {
-            id: 3,
-            senderId: 3,
-            receiverId: 1,
-            content: 'Hello! Would like to collaborate on 3D renders.',
-            isRead: 0,
-            createdAt: '2026-08-04T16:00:00Z'
-          },
-          unreadCount: 1
-        }
-      ];
+      return [];
     }
   },
 
   // 26.4 PUT /chat/conversations/{peerId}/read
   markConversationRead: async (peerId: number) => {
-    try {
-      const res = await apiClient.put(`/chat/conversations/${peerId}/read`);
-      return res.data;
-    } catch {
-      mockMessagesStore.forEach(m => {
-        if (m.senderId === peerId) m.isRead = 1;
-      });
-      return { success: true };
-    }
+    const res = await apiClient.put(`/chat/conversations/${peerId}/read`);
+    return res.data;
   },
 
   // 26.5 GET /chat/unread-count
   getUnreadChatCount: async (): Promise<number> => {
     try {
       const res = await apiClient.get('/chat/unread-count');
-      return res.data.count ?? res.data;
+      return res.data.count ?? res.data ?? 0;
     } catch {
-      return mockMessagesStore.filter(m => m.receiverId === 1 && m.isRead === 0).length;
+      return 0;
     }
   },
 
-  // Send message helper
-  sendMessage: (receiverId: number, content: string) => {
-    const msg: Message = {
-      id: Date.now(),
-      senderId: 1,
-      receiverId,
-      content,
-      isRead: 0,
-      createdAt: new Date().toISOString()
-    };
-    mockMessagesStore.push(msg);
-    return msg;
+  // Send message REST API
+  sendMessage: async (receiverId: number, content: string) => {
+    const res = await apiClient.post('/chat/messages', { receiverId, content });
+    return res.data;
   }
 };
 
@@ -130,7 +75,6 @@ export class ChatWebSocketService {
   connect(token: string) {
     this.token = token;
     this.isExplicitClose = false;
-    // 优先使用传入 token，否则回退到 localStorage 中的 token
     const authToken = token || localStorage.getItem('token') || '';
     const wsUrl = `${LOCAL_WS_HOST}/ws/chat?token=${encodeURIComponent(authToken)}`;
 
@@ -175,8 +119,8 @@ export class ChatWebSocketService {
 
   /**
    * 发送私信消息。
-   * 若 WebSocket 已连接则通过 WS 发送并返回乐观消息（用于本地即时展示）；
-   * 否则回退到 REST 接口发送。
+   * 若 WebSocket 已连接则通过 WS 发送并返回乐观消息；
+   * 否则通过 REST 接口发送。
    */
   send(receiverId: number, content: string, senderId: number): Message {
     const optimistic: Message = {
@@ -191,8 +135,7 @@ export class ChatWebSocketService {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify({ receiverId, content }));
     } else {
-      // Fallback via REST engine
-      chatApi.sendMessage(receiverId, content);
+      chatApi.sendMessage(receiverId, content).catch(() => {});
     }
     return optimistic;
   }

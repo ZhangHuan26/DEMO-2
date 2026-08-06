@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Search, ShieldAlert, Lock, Unlock } from 'lucide-react';
-import { User } from '../../types';
+import { Users, Search, ShieldAlert, Lock, Unlock, History, ShieldCheck, UserX, X } from 'lucide-react';
+import { User, FreezeLog } from '../../types';
 import { adminApi } from '../../api/admin';
 import { FreezeModal } from '../../components/common/FreezeModal';
 
@@ -13,11 +13,16 @@ export const AdminUsersPage: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isFreezeModalOpen, setIsFreezeModalOpen] = useState(false);
 
+  // Freeze Logs Modal State
+  const [logsUser, setLogsUser] = useState<User | null>(null);
+  const [freezeLogs, setFreezeLogs] = useState<FreezeLog[]>([]);
+  const [isLogsModalOpen, setIsLogsModalOpen] = useState(false);
+  const [logsLoading, setLogsLoading] = useState(false);
+
   const loadUsers = async () => {
     setLoading(true);
     try {
       const list = await adminApi.getUsers({ keyword: search || undefined });
-      // 确保返回的是数组
       setUsers(Array.isArray(list) ? list : []);
     } catch {
       setUsers([]);
@@ -31,13 +36,44 @@ export const AdminUsersPage: React.FC = () => {
   }, [search]);
 
   const handleUnfreeze = async (user: User) => {
-    if (!confirm(`确认解除用户 "${user.nickName}" 的账号封禁状态？`)) return;
     try {
       await adminApi.unfreezeUser(user.id);
       setUsers(prev => prev.map(u => u.id === user.id ? { ...u, status: 0 } : u));
-      alert('已成功解除封禁！');
     } catch {
       alert('解封操作失败');
+    }
+  };
+
+  const handleToggleAdminRole = async (user: User) => {
+    const isAdmin = user.role === 1 || (user.role as unknown) === 'admin' || (user.role as unknown) === '1';
+    if (isAdmin) {
+      try {
+        await adminApi.revokeAdmin(user.id);
+        setUsers(prev => prev.map(u => u.id === user.id ? { ...u, role: 0 } : u));
+      } catch {
+        alert('操作失败');
+      }
+    } else {
+      try {
+        await adminApi.grantAdmin({ userId: user.id });
+        setUsers(prev => prev.map(u => u.id === user.id ? { ...u, role: 1 } : u));
+      } catch {
+        alert('操作失败');
+      }
+    }
+  };
+
+  const handleOpenLogs = async (user: User) => {
+    setLogsUser(user);
+    setIsLogsModalOpen(true);
+    setLogsLoading(true);
+    try {
+      const logs = await adminApi.getFreezeLogs(user.id);
+      setFreezeLogs(Array.isArray(logs) ? logs : []);
+    } catch {
+      setFreezeLogs([]);
+    } finally {
+      setLogsLoading(false);
     }
   };
 
@@ -95,7 +131,7 @@ export const AdminUsersPage: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    {u.role === 1 || u.role === 'admin' || u.role === '1' ? (
+                    {u.role === 1 || (u.role as unknown) === 'admin' || (u.role as unknown) === '1' ? (
                       <span className="px-2.5 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded-full text-xs font-bold">超级管理员</span>
                     ) : (
                       <span className="px-2.5 py-1 bg-neutral-100 text-neutral-600 rounded-full text-xs font-semibold">普通创作者</span>
@@ -112,13 +148,34 @@ export const AdminUsersPage: React.FC = () => {
                       </span>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-right space-x-2">
+                  <td className="px-6 py-4 text-right space-x-1.5">
+                    <button
+                      onClick={() => handleOpenLogs(u)}
+                      title="查看封禁记录"
+                      className="px-2.5 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-full text-xs font-semibold transition-colors cursor-pointer inline-flex items-center gap-1"
+                    >
+                      <History className="w-3.5 h-3.5" /> 日志
+                    </button>
+
+                    <button
+                      onClick={() => handleToggleAdminRole(u)}
+                      title={u.role === 1 ? "撤销管理员" : "提升为管理员"}
+                      className={`px-2.5 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer inline-flex items-center gap-1 ${
+                        u.role === 1 || (u.role as unknown) === 'admin'
+                          ? 'bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200'
+                          : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'
+                      }`}
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      {u.role === 1 || (u.role as unknown) === 'admin' ? '撤权' : '设管理员'}
+                    </button>
+
                     {u.status === 1 ? (
                       <button
                         onClick={() => handleUnfreeze(u)}
-                        className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full text-xs font-bold transition-colors cursor-pointer shadow-2xs"
                       >
-                        解封账号
+                        解封
                       </button>
                     ) : (
                       <button
@@ -126,9 +183,9 @@ export const AdminUsersPage: React.FC = () => {
                           setSelectedUser(u);
                           setIsFreezeModalOpen(true);
                         }}
-                        className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-full text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+                        className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-full text-xs font-bold transition-colors cursor-pointer shadow-2xs"
                       >
-                        冻结封禁
+                        冻结
                       </button>
                     )}
                   </td>
@@ -138,6 +195,56 @@ export const AdminUsersPage: React.FC = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Freeze Logs Modal */}
+      {isLogsModalOpen && logsUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white border border-neutral-200 rounded-2xl p-6 max-w-lg w-full shadow-2xl relative space-y-4">
+            <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+              <div className="flex items-center gap-2 text-neutral-900 font-bold text-base">
+                <History className="w-5 h-5 text-[#0057FF]" />
+                用户 <span>{logsUser.nickName}</span> 的封禁操作历史
+              </div>
+              <button
+                onClick={() => setIsLogsModalOpen(false)}
+                className="p-1 hover:bg-neutral-100 rounded-lg text-neutral-500 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="max-h-72 overflow-y-auto space-y-3 pr-1">
+              {logsLoading ? (
+                <div className="text-center py-8 text-neutral-400 text-xs font-mono">正在加载日志记录...</div>
+              ) : freezeLogs.length === 0 ? (
+                <div className="text-center py-8 text-neutral-400 text-xs">该用户暂无违规封禁记录</div>
+              ) : (
+                freezeLogs.map((log) => (
+                  <div key={log.id} className="p-3 bg-neutral-50 border border-neutral-200 rounded-xl space-y-1 text-xs">
+                    <div className="flex items-center justify-between font-mono text-[11px] text-neutral-500">
+                      <span>操作员 ID: #{log.adminId}</span>
+                      <span>{new Date(log.createdAt).toLocaleString()}</span>
+                    </div>
+                    <div className="text-neutral-800 font-medium">
+                      <span className="font-bold text-rose-600">封禁原因：</span>
+                      {log.reason}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                onClick={() => setIsLogsModalOpen(false)}
+                className="px-4 py-2 bg-neutral-900 text-white rounded-xl text-xs font-bold hover:bg-neutral-800 cursor-pointer"
+              >
+                关闭窗口
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <FreezeModal
         isOpen={isFreezeModalOpen}

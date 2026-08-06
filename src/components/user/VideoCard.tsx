@@ -48,6 +48,9 @@ export const VideoCard: React.FC<{ video: Video }> = ({ video }) => {
               src={resolveImageUrl(video.author?.avatar) || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop'}
               alt="创作者"
               className="w-5 h-5 rounded-full object-cover border border-neutral-200"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop';
+              }}
             />
 
             <span className="font-semibold text-xs text-neutral-700 truncate max-w-[100px]">{video.author?.nickName || '动效设计师'}</span>

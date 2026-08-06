@@ -116,9 +116,12 @@ export const UserShell: React.FC = () => {
                 className="flex items-center gap-2 p-1 rounded-full hover:bg-neutral-100 transition-colors cursor-pointer"
               >
                 <img
-                  src={resolveImageUrl(user.avatar)}
+                  src={resolveImageUrl(user.avatar) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'}
                   alt={user.nickName}
                   className="w-9.5 h-9.5 rounded-full object-cover border border-neutral-300"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop';
+                  }}
                 />
 
               </button>
@@ -167,7 +170,7 @@ export const UserShell: React.FC = () => {
                     >
                       <ShieldAlert className="w-4 h-4 text-rose-500" /> 我的申诉记录
                     </Link>
-                    {(user.role === 1 || user.role === 'admin' || user.role === '1') && (
+                    {(user.role === 1 || (user.role as unknown) === 'admin' || (user.role as unknown) === '1') && (
                       <Link
                         to="/admin"
                         onClick={() => setIsUserMenuOpen(false)}

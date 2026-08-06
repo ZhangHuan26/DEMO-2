@@ -12,6 +12,8 @@ interface CreateWorkModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  initialType?: 'article' | 'video' | 'file';
+  lockType?: boolean;
   // 编辑模式：传入要编辑的作品数据
   editData?: {
     type: 'article' | 'video' | 'file';
@@ -25,9 +27,11 @@ export const CreateWorkModal: React.FC<CreateWorkModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  initialType,
+  lockType = false,
   editData,
 }) => {
-  const [workType, setWorkType] = useState<'article' | 'video' | 'file'>('article');
+  const [workType, setWorkType] = useState<'article' | 'video' | 'file'>(initialType || 'article');
   const [categories, setCategories] = useState<{ article: Category[]; video: Category[]; file: Category[] }>({
     article: [],
     video: [],
@@ -66,6 +70,9 @@ export const CreateWorkModal: React.FC<CreateWorkModalProps> = ({
     if (!isOpen) return;
 
     // 重置表单
+    if (initialType && !editData) {
+      setWorkType(initialType);
+    }
     setTitle('');
     setCoverImage('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop');
     setCategoryId(1);
@@ -249,8 +256,24 @@ export const CreateWorkModal: React.FC<CreateWorkModalProps> = ({
           {isEditMode ? '修改您已发布的作品内容，保存后立即生效。' : '向 LeapLunar04 创意社区发布您最新的设计项目、动效秀场或设计资源。'}
         </p>
 
-        {/* Work Type Selection Tabs - 编辑模式下隐藏 */}
-        {!isEditMode && (
+        {/* Work Type Selection Tabs - 编辑模式或类型写死锁定模式下调整 */}
+        {!isEditMode && lockType && (
+          <div className="mb-6 p-3 bg-neutral-950 border border-neutral-800 rounded-xl flex items-center justify-between text-xs font-semibold">
+            <div className="flex items-center gap-2 text-white">
+              {workType === 'article' && <FileText className="w-4 h-4 text-[#0057FF]" />}
+              {workType === 'video' && <Video className="w-4 h-4 text-[#0057FF]" />}
+              {workType === 'file' && <FolderPlus className="w-4 h-4 text-[#0057FF]" />}
+              <span className="font-bold text-sm">
+                发布类型：{workType === 'article' ? '图文作品' : workType === 'video' ? '视频秀场作品' : '设计资源文件'}
+              </span>
+            </div>
+            <span className="text-[10px] text-neutral-400 bg-neutral-900 border border-neutral-800 px-2.5 py-1 rounded-full font-mono">
+              对应页面发布类型已锁定
+            </span>
+          </div>
+        )}
+
+        {!isEditMode && !lockType && (
           <div className="grid grid-cols-3 gap-3 mb-6 p-1 bg-neutral-950 border border-neutral-800 rounded-xl text-xs font-semibold">
             <button
               type="button"

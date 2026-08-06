@@ -10,7 +10,7 @@ export const AdminShell: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isAdmin = user?.role === 'admin' || user?.role === 1 || user?.role === '1';
+  const isAdmin = (user?.role as unknown) === 'admin' || user?.role === 1 || (user?.role as unknown) === '1';
 
   if (!isAdmin) {
     return (

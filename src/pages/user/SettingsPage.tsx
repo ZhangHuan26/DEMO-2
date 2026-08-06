@@ -65,12 +65,17 @@ export const SettingsPage: React.FC = () => {
       formData.append('file', file);
       const res = await adminApi.uploadImage(formData);
       if (res && res.url) {
-        // 本地上传只存文件名（如 "abc.jpg"），展示时由 resolveImageUrl 拼接后端公共路径
-        const filename = res.url.split('/').pop() || res.url;
-        setAvatar(filename);
+        let finalUrl = res.url;
+        // 如果不是 Data URL/Blob URL/HTTP/以 / 开头，且包含 uploads/，做规范化修正
+        if (!/^(data:|blob:|https?:|\/)/i.test(finalUrl)) {
+          if (finalUrl.startsWith('uploads/')) {
+            finalUrl = `/${finalUrl}`;
+          }
+        }
+        setAvatar(finalUrl);
       }
     } catch {
-      // Fallback already handled by FileReader
+      // FileReader already set local Data URL preview
     } finally {
       setUploadingAvatar(false);
     }
@@ -142,7 +147,14 @@ export const SettingsPage: React.FC = () => {
           <div className="relative group shrink-0">
             <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-[#0057FF] bg-neutral-800 shadow-xl relative flex items-center justify-center">
               {avatar ? (
-                <img src={resolveImageUrl(avatar)} alt="Avatar Preview" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                <img
+                  src={resolveImageUrl(avatar)}
+                  alt="Avatar Preview"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop';
+                  }}
+                />
               ) : (
 
                 <span className="text-3xl font-black text-white">{nickName.slice(0, 1) || 'U'}</span>

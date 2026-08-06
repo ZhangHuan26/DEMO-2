@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { UserPlus, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { BehanceImagePicker } from '../../components/common/BehanceImagePicker';
+import { CelebrationModal } from '../../components/common/CelebrationModal';
 import { PRESET_AVATARS } from '../../config/presets';
 
 export const RegisterPage: React.FC = () => {
@@ -15,6 +16,7 @@ export const RegisterPage: React.FC = () => {
   const [avatar, setAvatar] = useState(PRESET_AVATARS[0]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,12 +24,17 @@ export const RegisterPage: React.FC = () => {
     setLoading(true);
     try {
       await register({ email, password, nickName, avatar });
-      navigate('/');
+      setShowCelebration(true);
     } catch (err: any) {
       setError(err.message || '注册新账号失败');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleConfirmCelebration = () => {
+    setShowCelebration(false);
+    navigate('/');
   };
 
   return (
@@ -108,6 +115,13 @@ export const RegisterPage: React.FC = () => {
           </Link>
         </div>
       </div>
+
+      <CelebrationModal
+        isOpen={showCelebration}
+        title="欢迎加入 LeapLunar04！"
+        subtitle="您的会员账号注册成功，正在为您跳转至社区大厅..."
+        onConfirm={handleConfirmCelebration}
+      />
     </div>
   );
 };

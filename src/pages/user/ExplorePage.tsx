@@ -198,7 +198,7 @@ export const ExplorePage: React.FC = () => {
   const allWorks = [
     ...articles.map(a => ({ ...a, workType: 'article' as const })),
     ...videos.map(v => ({ ...v, workType: 'video' as const })),
-    ...files.map(f => ({ ...f, workType: 'file' as const })),
+    ...files.map(f => ({ ...f, workType: 'file' as const, viewCount: f.downloadCount })),
   ];
 
   // Filter logic

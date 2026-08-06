@@ -30,6 +30,10 @@ export const AdminCategoriesPage: React.FC = () => {
   const [catDesc, setCatDesc] = useState('');
   const [sortOrder, setSortOrder] = useState('0');
 
+  // Delete Confirmation Modal State
+  const [deleteCategoryItem, setDeleteCategoryItem] = useState<Category | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const loadCategories = async (type: CategoryType) => {
     setLoading(true);
     try {
@@ -94,15 +98,20 @@ export const AdminCategoriesPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('确定要删除该分类吗？')) return;
+  const handleConfirmDelete = async () => {
+    if (!deleteCategoryItem) return;
+    setIsDeleting(true);
     try {
+      const id = deleteCategoryItem.id;
       if (activeType === 'article') await articlesApi.deleteCategory(id);
       else if (activeType === 'video') await videosApi.deleteCategory(id);
       else await filesApi.deleteCategory(id);
-      setCategories(prev => prev.filter(c => c.id !== id));
-    } catch {
-      alert('删除失败。');
+      setCategories(prev => prev.filter(c => String(c.id) !== String(id)));
+      setDeleteCategoryItem(null);
+    } catch (err: any) {
+      alert(err?.message || '删除失败。');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -197,7 +206,7 @@ export const AdminCategoriesPage: React.FC = () => {
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(c.id)}
+                        onClick={() => setDeleteCategoryItem(c)}
                         className="p-2 text-neutral-600 hover:text-rose-600 rounded-full hover:bg-neutral-100 transition-colors cursor-pointer"
                         title="删除"
                       >
@@ -234,7 +243,7 @@ export const AdminCategoriesPage: React.FC = () => {
                         className={`flex-1 px-3 py-2.5 rounded-full text-xs font-bold flex items-center justify-center gap-1.5 border transition-all cursor-pointer ${
                           isActive
                             ? 'bg-[#0057FF] border-[#0057FF] text-white shadow-xs'
-                            : 'bg-neutral-50 border-neutral-200 text-neutral-600 hover:bg-neutral-100'
+                            : 'bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50'
                         }`}
                       >
                         <Icon className="w-4 h-4" /> {meta.label}
@@ -252,7 +261,7 @@ export const AdminCategoriesPage: React.FC = () => {
                   value={catName}
                   onChange={(e) => setCatName(e.target.value)}
                   placeholder="例如 UI/UX 设计"
-                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 text-sm text-neutral-900 focus:outline-none focus:border-[#0057FF]"
+                  className="w-full bg-white border border-neutral-200 rounded-xl p-3 text-sm text-neutral-900 focus:outline-none focus:border-[#0057FF]"
                 />
               </div>
 
@@ -263,7 +272,7 @@ export const AdminCategoriesPage: React.FC = () => {
                   onChange={(e) => setCatDesc(e.target.value)}
                   placeholder="简要描述该分类的定位与内容方向"
                   rows={2}
-                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 text-sm text-neutral-900 focus:outline-none focus:border-[#0057FF] resize-none"
+                  className="w-full bg-white border border-neutral-200 rounded-xl p-3 text-sm text-neutral-900 focus:outline-none focus:border-[#0057FF] resize-none"
                 />
               </div>
 
@@ -273,7 +282,7 @@ export const AdminCategoriesPage: React.FC = () => {
                   type="number"
                   value={sortOrder}
                   onChange={(e) => setSortOrder(e.target.value)}
-                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 text-sm text-neutral-900 focus:outline-none focus:border-[#0057FF]"
+                  className="w-full bg-white border border-neutral-200 rounded-xl p-3 text-sm text-neutral-900 focus:outline-none focus:border-[#0057FF]"
                 />
               </div>
 
@@ -282,6 +291,7 @@ export const AdminCategoriesPage: React.FC = () => {
                   value={catCover}
                   onChange={setCatCover}
                   label="分类封面图片"
+                  workType={catType}
                 />
               </div>
 
@@ -301,6 +311,39 @@ export const AdminCategoriesPage: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Delete Confirmation Modal */}
+      {deleteCategoryItem && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-neutral-200 rounded-2xl w-full max-w-sm p-6 space-y-4 shadow-2xl text-center">
+            <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto border border-rose-100">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-neutral-900">确认删除该分类？</h3>
+              <p className="text-xs text-neutral-500 mt-1">
+                即将删除分类 “<span className="font-bold text-neutral-800">{deleteCategoryItem.name}</span>”。此操作不可撤销。
+              </p>
+            </div>
+            <div className="flex justify-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeleteCategoryItem(null)}
+                className="px-5 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs font-bold rounded-full transition-colors cursor-pointer"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleConfirmDelete}
+                className="px-5 py-2 bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white text-xs font-bold rounded-full shadow-md shadow-rose-600/20 cursor-pointer"
+              >
+                {isDeleting ? '正在删除...' : '确认删除'}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -34,7 +34,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // 需要管理员权限但不是管理员
-  if (requireAdmin && (!user || (user.role !== 1 && user.role !== 'admin'))) {
+  if (requireAdmin && (!user || (user.role !== 1 && (user.role as unknown) !== 'admin'))) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center text-center p-6">
         <div className="space-y-4">

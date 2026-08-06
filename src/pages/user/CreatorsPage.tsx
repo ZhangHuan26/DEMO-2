@@ -66,7 +66,14 @@ export const CreatorsPage: React.FC = () => {
             <div key={`creator-${c.id ?? idx}-${idx}`} className="bg-white border border-neutral-200 rounded-2xl p-6 text-center space-y-4 hover:border-neutral-300 hover:shadow-xl transition-all">
               <Link to={`/users/${c.id}`}>
                 {c.avatar ? (
-                  <img src={resolveImageUrl(c.avatar)} alt={c.nickName} className="w-20 h-20 rounded-full object-cover mx-auto border-2 border-[#0057FF]" />
+                  <img
+                    src={resolveImageUrl(c.avatar)}
+                    alt={c.nickName}
+                    className="w-20 h-20 rounded-full object-cover mx-auto border-2 border-[#0057FF]"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop';
+                    }}
+                  />
                 ) : (
 
                   <div className="w-20 h-20 rounded-full mx-auto border-2 border-[#0057FF] bg-[#0057FF]/10 flex items-center justify-center text-[#0057FF] font-bold text-xl">

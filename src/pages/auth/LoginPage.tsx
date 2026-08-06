@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LogIn, ShieldAlert, UserCheck, Sparkles } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { CelebrationModal } from '../../components/common/CelebrationModal';
 
 export const LoginPage: React.FC = () => {
   const { login } = useAuth();
@@ -11,6 +12,20 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [targetPath, setTargetPath] = useState('/');
+
+  const handleLoginSuccess = (userRole: any) => {
+    const isAdm = userRole === 1 || userRole === 'admin' || userRole === '1';
+    const path = isAdm ? '/admin' : '/';
+    setTargetPath(path);
+    setShowCelebration(true);
+  };
+
+  const handleConfirmCelebration = () => {
+    setShowCelebration(false);
+    navigate(targetPath);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,11 +33,7 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
     try {
       const res = await login(email, password);
-      if (res?.user?.role === 1 || res?.user?.role === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/');
-      }
+      handleLoginSuccess(res?.user?.role);
     } catch (err: any) {
       setError(err.message || '登录失败，请检查账号和密码');
     } finally {
@@ -35,11 +46,7 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
     try {
       const res = await login(userEmail, '123456');
-      if (res?.user?.role === 1 || res?.user?.role === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/');
-      }
+      handleLoginSuccess(res?.user?.role);
     } catch (err: any) {
       setError(err.message || '快捷登录失败');
     } finally {
@@ -146,6 +153,13 @@ export const LoginPage: React.FC = () => {
           </Link>
         </div>
       </div>
+
+      <CelebrationModal
+        isOpen={showCelebration}
+        title="登录成功！"
+        subtitle="欢迎回到 LeapLunar04 创意社区，正在为您跳转..."
+        onConfirm={handleConfirmCelebration}
+      />
     </div>
   );
 };

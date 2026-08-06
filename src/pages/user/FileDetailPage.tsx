@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Download, Lock, FileText, Share2, Bookmark, Flag, ArrowLeft, Send, Trash2, Pencil, Globe } from 'lucide-react';
+import {
+  Download, Lock, FileText, Share2, Bookmark, Flag, Send, Trash2,
+  Pencil, Globe, Eye, UserPlus, UserCheck, Sparkles, Folder
+} from 'lucide-react';
 
 import { FileItem, Comment, User } from '../../types';
 import { filesApi } from '../../api/files';
 import { useAuth } from '../../context/AuthContext';
-import { AppreciateButton } from '../../components/common/AppreciateButton';
 import { ReportModal } from '../../components/common/ReportModal';
 import { ChatDrawer } from '../../components/user/ChatDrawer';
 import { resolveImageUrl } from '../../config/env';
-
+import { BehanceDetailShell } from '../../components/common/BehanceDetailShell';
+import { LikeFavoriteAvatarWall } from '../../components/common/LikeFavoriteAvatarWall';
 
 export const FileDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +26,7 @@ export const FileDetailPage: React.FC = () => {
   const [downloading, setDownloading] = useState(false);
 
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState<{ type: number; id: number }>({ type: 2, id: Number(id) });
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatTarget, setChatTarget] = useState<User | null>(null);
 
@@ -45,11 +49,26 @@ export const FileDetailPage: React.FC = () => {
   }, [id]);
 
   if (loading) {
-    return <div className="min-h-screen bg-white flex items-center justify-center text-xs text-neutral-500">正在加载资源大厅...</div>;
+    return (
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center text-xs text-neutral-400">
+        <Sparkles className="w-5 h-5 text-[#0057FF] animate-spin mr-2" />
+        正在加载设计资源大厅...
+      </div>
+    );
   }
 
   if (!file) {
-    return <div className="min-h-screen bg-white flex items-center justify-center text-xs text-neutral-500">未找到该资源文件</div>;
+    return (
+      <div className="min-h-screen bg-neutral-950 flex flex-col items-center justify-center text-xs text-neutral-400 space-y-4">
+        <p>未找到该资源文件或已被删除</p>
+        <button
+          onClick={() => navigate(-1)}
+          className="px-4 py-2 bg-neutral-900 border border-neutral-800 text-white rounded-xl hover:bg-neutral-800 transition-colors"
+        >
+          返回上一页
+        </button>
+      </div>
+    );
   }
 
   const isOwner = user?.id === file.userId;
@@ -83,150 +102,239 @@ export const FileDetailPage: React.FC = () => {
     }
   };
 
+  const handleToggleFavorite = async () => {
+    if (!file) return;
+    try {
+      if (file.isFavorited) {
+        setFile(prev => prev ? { ...prev, isFavorited: false, favoriteCount: Math.max(0, prev.favoriteCount - 1) } : null);
+      } else {
+        await filesApi.favoriteFile(file.id);
+        setFile(prev => prev ? { ...prev, isFavorited: true, favoriteCount: prev.favoriteCount + 1 } : null);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCommentText.trim()) return;
+    if (!newCommentText.trim() || !file) return;
     try {
       const created = await filesApi.createComment(file.id, { content: newCommentText });
-      setComments(prev => [created, ...prev]);
+      const freshComments = await filesApi.getComments(file.id);
+      if (freshComments && freshComments.length > 0) {
+        setComments(freshComments);
+      } else if (created && created.content) {
+        setComments(prev => [created, ...prev]);
+      }
       setNewCommentText('');
     } catch {
       alert('发表评论失败');
     }
   };
 
-  return (
-    <div className="min-h-screen bg-neutral-50 text-neutral-900 flex flex-col font-sans relative">
-      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-neutral-200 px-6 py-3 flex items-center justify-between shadow-2xs">
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="p-1.5 text-neutral-600 hover:text-black rounded-full hover:bg-neutral-100 transition-colors cursor-pointer">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <h1 className="text-sm font-bold text-neutral-900 truncate max-w-md">{file.title}</h1>
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    alert('资源链接已成功复制到剪贴板！');
+  };
+
+  const fileMediaStage = (
+    <div className="w-full max-w-3xl bg-neutral-900 border border-neutral-800 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row gap-6 items-center shadow-2xl">
+      <img
+        src={resolveImageUrl(file.coverImage)}
+        alt={file.title}
+        className="w-full md:w-72 h-52 object-cover rounded-2xl border border-neutral-800 shadow-lg"
+      />
+
+      <div className="flex-1 space-y-4 text-white w-full">
+        <div className="flex items-center gap-2 text-xs font-mono">
+          <span className="px-3 py-1 bg-emerald-600 text-white rounded-md font-bold uppercase tracking-wider">
+            {file.fileType || 'ZIP'}
+          </span>
+          <span className="text-neutral-400">{file.fileSize || '12.5 MB'}</span>
+          <span className="text-neutral-400">📥 {file.downloadCount} 次下载</span>
         </div>
 
-        {/* Author Info - 仅非当前用户作品时显示 */}
-        {!isOwner && (
-          <div className="flex items-center gap-3">
-            <Link to={`/users/${file.userId}`} className="flex items-center gap-2 group">
-              <img src={resolveImageUrl(file.author?.avatar)} alt="Author" className="w-8 h-8 rounded-full object-cover border border-neutral-200 shadow-xs" />
+        <h3 className="text-xl font-bold text-white leading-snug">{file.title}</h3>
+        <p className="text-xs text-neutral-300 leading-relaxed line-clamp-3">
+          {file.description || '高品质设计素材资源文件包，已包含矢量源文件与精细贴图。'}
+        </p>
 
-              <span className="text-xs font-semibold text-neutral-900 group-hover:text-[#0057FF] transition-colors">{file.author?.nickName}</span>
-            </Link>
+        {canDownload ? (
+          <button
+            onClick={handleDownload}
+            disabled={downloading}
+            className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 cursor-pointer active:scale-[0.98]"
+          >
+            <Download className="w-4 h-4" />
+            {downloading ? '正在准备下载资源...' : `立即下载资源 (${file.fileName || 'Resource.zip'})`}
+          </button>
+        ) : (
+          <div className="p-3 bg-rose-950/50 border border-rose-800/80 rounded-xl text-xs text-rose-300 flex items-center gap-2">
+            <Lock className="w-4 h-4 text-rose-400" />
+            <span>该资源已被作者或管理员设置为不可下载。</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <BehanceDetailShell
+      title={file.title}
+      categoryName={file.categoryName || '设计资源包'}
+      author={file.author}
+      coverImage={file.coverImage}
+      workType="file"
+      isLiked={file.isLiked}
+      likeCount={file.likeCount}
+      isFavorited={file.isFavorited}
+      favoriteCount={file.favoriteCount}
+      viewCount={file.downloadCount}
+      isOwner={isOwner}
+      onToggleLike={handleToggleLike}
+      onToggleFavorite={handleToggleFavorite}
+      onShare={handleShare}
+      onOpenChat={() => {
+        setChatTarget(file.author || null);
+        setIsChatOpen(true);
+      }}
+      onReport={() => {
+        setReportTarget({ type: 2, id: file.id });
+        setIsReportOpen(true);
+      }}
+      onPrev={file.id > 1 ? () => navigate(`/files/${file.id - 1}`) : undefined}
+      onNext={() => navigate(`/files/${file.id + 1}`)}
+      mediaContent={fileMediaStage}
+      tools={['Figma', 'Sketch', 'Photoshop']}
+    >
+      <div className="space-y-8">
+        <div className="space-y-4 border-b border-neutral-800 pb-6">
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1 bg-emerald-950/80 text-emerald-400 text-xs font-bold rounded-full border border-emerald-800/80 flex items-center gap-1">
+              <Folder className="w-3.5 h-3.5" />
+              {file.categoryName || '设计资源库'}
+            </span>
+            <span className="text-xs text-neutral-400 font-mono">
+              发布时间: {new Date(file.createdAt).toLocaleDateString()}
+            </span>
+          </div>
+
+          <h1 className="text-3xl font-extrabold text-white leading-snug">{file.title}</h1>
+          <p className="text-sm text-neutral-300 leading-relaxed">{file.description}</p>
+        </div>
+
+        {/* Stats & Actions */}
+        <div className="flex flex-wrap items-center justify-between gap-4 p-5 bg-neutral-900/90 rounded-2xl border border-neutral-800">
+          <div className="flex items-center gap-6 text-xs text-neutral-400 font-mono">
+            <span className="flex items-center gap-1.5 font-bold text-white">
+              <Download className="w-4 h-4 text-emerald-400" /> {file.downloadCount} 次下载
+            </span>
+            <span>❤️ {file.likeCount} 赞赏</span>
+            <span>⭐ {file.favoriteCount} 收藏</span>
+          </div>
+
+          {canDownload && (
+            <button
+              onClick={handleDownload}
+              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-md shadow-emerald-600/20 flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" /> 下载设计文件
+            </button>
+          )}
+        </div>
+
+        {/* Liked & Favorited Creator Avatar Wall */}
+        <LikeFavoriteAvatarWall
+          likeCount={file.likeCount}
+          favoriteCount={file.favoriteCount}
+          isLiked={file.isLiked}
+          isFavorited={file.isFavorited}
+          currentUser={user}
+          workTitle={file.title}
+          workType="file"
+        />
+
+        {/* Author Card */}
+        {file.author && (
+          <div className="p-6 bg-gradient-to-r from-neutral-900 to-neutral-950 text-white rounded-2xl border border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl">
+            <div className="flex items-center gap-4">
+              <img
+                src={resolveImageUrl(file.author.avatar)}
+                alt={file.author.nickName}
+                className="w-16 h-16 rounded-full object-cover border-2 border-emerald-500"
+              />
+              <div>
+                <h3 className="text-lg font-bold text-white">{file.author.nickName}</h3>
+                <p className="text-xs text-neutral-400 mt-1 line-clamp-1">{file.author.signature || 'UI/UX 资源设计师'}</p>
+              </div>
+            </div>
+
+            {!isOwner && (
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <button
+                  onClick={() => {
+                    setChatTarget(file.author || null);
+                    setIsChatOpen(true);
+                  }}
+                  className="px-5 py-2.5 bg-[#0057FF] hover:bg-[#0046CC] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-md shadow-[#0057FF]/30"
+                >
+                  聘请合作
+                </button>
+              </div>
+            )}
           </div>
         )}
 
-      </header>
+        {/* File Comments */}
+        <div id="comments-section" className="space-y-6 pt-4">
+          <h3 className="text-xl font-bold text-white flex items-center gap-2">
+            资源使用反馈 ({comments.length})
+          </h3>
 
-      <div className="flex-1 max-w-6xl w-full mx-auto px-4 lg:px-8 py-8 flex gap-8">
-        <div className="flex-1 space-y-8">
-          {/* Cover & Download Box */}
-          <div className="rounded-2xl overflow-hidden border border-neutral-200 bg-white p-6 flex flex-col md:flex-row gap-6 items-center shadow-xs">
-            <img src={resolveImageUrl(file.coverImage)} alt={file.title} className="w-full md:w-80 h-52 object-cover rounded-xl border border-neutral-200" />
-
-
-            <div className="flex-1 space-y-4">
-              <h1 className="text-xl font-bold text-neutral-900">{file.title}</h1>
-              <p className="text-xs text-neutral-600 leading-relaxed">{file.description || '设计资源文件包。'}</p>
-
-              <div className="flex items-center gap-3 text-xs font-mono text-neutral-500">
-                <span className="px-2.5 py-1 bg-[#0057FF] text-white rounded font-bold uppercase">{file.fileType}</span>
-                <span>{file.fileSize}</span>
-                <span>📥 {file.downloadCount} 次下载</span>
-              </div>
-
-              {canDownload ? (
-                <button
-                  onClick={handleDownload}
-                  disabled={downloading}
-                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 cursor-pointer"
-                >
-                  <Download className="w-4 h-4" />
-                  {downloading ? '正在准备下载...' : `📥 下载资源文件 (${file.fileName})`}
-                </button>
-              ) : (
-                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-600 flex items-center gap-2">
-                  <Lock className="w-4 h-4" />
-                  <span>该资源文件已被作者或管理员禁止下载。</span>
-                </div>
-              )}
+          <form onSubmit={handleAddComment} className="space-y-3">
+            <textarea
+              required
+              rows={3}
+              value={newCommentText}
+              onChange={(e) => setNewCommentText(e.target.value)}
+              placeholder="对该设计资源文件进行评价或使用建议..."
+              className="w-full bg-neutral-900 border border-neutral-800 rounded-2xl p-4 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-[#0057FF] focus:bg-black transition-all shadow-inner"
+            />
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                className="px-6 py-2.5 bg-[#0057FF] hover:bg-[#0046CC] text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-[#0057FF]/20"
+              >
+                <Send className="w-3.5 h-3.5" /> 发表反馈
+              </button>
             </div>
-          </div>
+          </form>
 
-          {/* Comments */}
-          <div className="bg-white border border-neutral-200 rounded-2xl p-8 space-y-6 shadow-xs">
-            <h3 className="text-base font-bold text-neutral-900">资源讨论交流 ({comments.length})</h3>
-            <form onSubmit={handleAddComment} className="space-y-3">
-              <textarea
-                rows={3}
-                value={newCommentText}
-                onChange={(e) => setNewCommentText(e.target.value)}
-                placeholder="向作者提问或分享此资源的使用心得..."
-                className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3.5 text-xs text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#0057FF] focus:bg-white transition-all"
-              />
-              <div className="flex justify-end">
-                <button type="submit" className="px-5 py-2 bg-[#0057FF] hover:bg-[#0046CC] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer shadow-md shadow-[#0057FF]/20">
-                  <Send className="w-3.5 h-3.5" /> 发表评论
-                </button>
-              </div>
-            </form>
-
-            <div className="space-y-3 pt-4 border-t border-neutral-200">
-              {comments.map((c, idx) => (
-                <div key={`fcomment-${c.id ?? idx}-${idx}`} className="p-3.5 bg-neutral-50 rounded-xl border border-neutral-200 text-xs text-neutral-800 space-y-1">
-                  <div className="font-semibold text-neutral-900">{c.author?.nickName || '创作者'}</div>
-                  <p>{c.content}</p>
+          <div className="space-y-4 pt-2">
+            {comments.length === 0 ? (
+              <p className="text-center py-10 text-xs text-neutral-400 bg-neutral-900/60 rounded-2xl border border-neutral-800">
+                暂无使用反馈，下载后发表您对该设计的想法吧！
+              </p>
+            ) : (
+              comments.map((c, idx) => (
+                <div key={`file-comment-${c.id ?? idx}-${idx}`} className="p-4 bg-neutral-900/90 rounded-2xl border border-neutral-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2.5">
+                      <img src={resolveImageUrl(c.author?.avatar) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'} alt="Commenter" className="w-7 h-7 rounded-full object-cover border border-neutral-700" />
+                      <span className="font-bold text-white">{c.author?.nickName || '创作者'}</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-neutral-300 leading-relaxed pl-9">{c.content}</p>
                 </div>
-              ))}
-            </div>
+              ))
+            )}
           </div>
         </div>
-
       </div>
 
-      {/* Bottom Floating Action Bar - 仅自己可见 */}
-      {isOwner && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 bg-black/90 backdrop-blur-xl border border-neutral-800 px-6 py-3 rounded-full shadow-2xl flex items-center gap-3">
-          <button
-            onClick={() => {
-              if (confirm('确定要删除该资源文件吗？')) {
-                filesApi.deleteFile(file.id).then(() => {
-                  alert('资源文件已删除');
-                  navigate('/profile');
-                });
-              }
-            }}
-            className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-full transition-all cursor-pointer flex items-center gap-1.5"
-          >
-            <Trash2 className="w-3.5 h-3.5" /> 删除
-          </button>
-          <button
-            onClick={() => navigate(`/files/${file.id}/edit`)}
-            className="px-4 py-2 bg-[#0057FF] hover:bg-[#0046CC] text-white text-xs font-bold rounded-full transition-all cursor-pointer flex items-center gap-1.5"
-          >
-            <Pencil className="w-3.5 h-3.5" /> 修改
-          </button>
-          <button
-            onClick={() => {
-              const newStatus = file.status === 1 ? 0 : 1;
-              filesApi.updateFileStatus(file.id, newStatus).then(() => {
-                setFile(prev => prev ? { ...prev, status: newStatus } : null);
-                alert(newStatus === 1 ? '资源已发布' : '资源已下架');
-              });
-            }}
-            className={`px-4 py-2 text-white text-xs font-bold rounded-full transition-all cursor-pointer flex items-center gap-1.5 ${
-              file.status === 1 ? 'bg-amber-500 hover:bg-amber-400' : 'bg-emerald-500 hover:bg-emerald-400'
-            }`}
-          >
-            {file.status === 1 ? <Lock className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
-            {file.status === 1 ? '下架' : '发布'}
-          </button>
-        </div>
-      )}
-
-      <ReportModal isOpen={isReportOpen} targetType={2} targetId={file.id} onClose={() => setIsReportOpen(false)} />
+      <ReportModal isOpen={isReportOpen} targetType={reportTarget.type} targetId={reportTarget.id} onClose={() => setIsReportOpen(false)} />
       <ChatDrawer isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} targetUser={chatTarget} />
-
-    </div>
+    </BehanceDetailShell>
   );
 };

@@ -130,7 +130,14 @@ export const SearchPage: React.FC = () => {
                 to={`/users/${u.id}`}
                 className="p-4 bg-white border border-neutral-200 rounded-2xl flex items-center gap-3 hover:border-neutral-300 hover:shadow-xl transition-all"
               >
-                <img src={resolveImageUrl(u.avatar)} alt={u.nickName} className="w-12 h-12 rounded-full object-cover border border-neutral-200" />
+                <img
+                  src={resolveImageUrl(u.avatar) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'}
+                  alt={u.nickName}
+                  className="w-12 h-12 rounded-full object-cover border border-neutral-200"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop';
+                  }}
+                />
 
                 <div>
                   <div className="font-bold text-neutral-900 text-sm">{u.nickName}</div>

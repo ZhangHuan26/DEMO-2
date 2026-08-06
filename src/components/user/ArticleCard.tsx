@@ -43,6 +43,9 @@ export const ArticleCard: React.FC<{ article: Article }> = ({ article }) => {
               src={resolveImageUrl(article.author?.avatar) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'}
               alt={article.author?.nickName || '创作者'}
               className="w-7 h-7 rounded-full object-cover border border-neutral-200 shadow-xs"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop';
+              }}
             />
 
             <span className="font-semibold text-sm text-neutral-800 truncate max-w-[110px]">{article.author?.nickName || '创作者'}</span>

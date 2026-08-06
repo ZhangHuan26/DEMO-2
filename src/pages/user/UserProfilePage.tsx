@@ -418,9 +418,12 @@ export const UserProfilePage: React.FC = () => {
       <div className="bg-white border border-neutral-200 rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden shadow-xs">
         <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
           <img
-            src={resolveImageUrl(profileUser.avatar)}
+            src={resolveImageUrl(profileUser.avatar) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'}
             alt={profileUser.nickName}
             className="w-24 h-24 rounded-full object-cover border-4 border-[#0057FF] shadow-lg"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop';
+            }}
           />
 
           <div>

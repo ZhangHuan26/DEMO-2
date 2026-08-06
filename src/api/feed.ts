@@ -1,6 +1,5 @@
 import { apiClient } from './client';
 import { Article, Video, FileItem } from '../types';
-import { mockArticles, mockVideos, mockFiles } from './mockData';
 
 export type FeedType = 'article' | 'video' | 'file';
 
@@ -24,10 +23,7 @@ export const feedApi = {
             const list = Array.isArray(data) ? data : data?.list;
             return Array.isArray(list) ? list : [];
         } catch {
-            // 网络异常时回退到本地 mock 数据
-            if (type === 'video') return mockVideos;
-            if (type === 'file') return mockFiles;
-            return mockArticles;
+            return [];
         }
     },
 
@@ -42,7 +38,7 @@ export const feedApi = {
             const list = Array.isArray(data) ? data : data?.list;
             return Array.isArray(list) ? list : [];
         } catch {
-            return mockArticles;
+            return [];
         }
     },
 
@@ -57,7 +53,7 @@ export const feedApi = {
             const list = Array.isArray(data) ? data : data?.list;
             return Array.isArray(list) ? list : [];
         } catch {
-            return mockVideos;
+            return [];
         }
     },
 
@@ -72,7 +68,7 @@ export const feedApi = {
             const list = Array.isArray(data) ? data : data?.list;
             return Array.isArray(list) ? list : [];
         } catch {
-            return mockFiles;
+            return [];
         }
     },
 };

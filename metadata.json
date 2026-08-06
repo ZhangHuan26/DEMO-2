@@ -1,0 +1,6 @@
+{
+  "name": "LeapLunar04",
+  "description": "LeapLunar04 Behance 风格创意设计与作品分享社区",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

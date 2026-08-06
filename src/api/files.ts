@@ -39,6 +39,8 @@ export const filesApi = {
   },
 
   // 10.3 POST /files
+  // 根据API文档，POST /files 只接受: file, articleId, categoryId, status, coverImage
+  // title, description, allowDownload 需要在上传后通过 PUT /files/{id} 更新
   uploadFile: async (params: {
     file: File | Blob;
     articleId?: number;
@@ -51,6 +53,8 @@ export const filesApi = {
   }) => {
     const formData = new FormData();
     formData.append('file', params.file);
+    
+    // 只传API文档中支持的参数
     if (params.categoryId !== undefined && params.categoryId !== 0) {
       formData.append('categoryId', String(params.categoryId));
     }
@@ -60,17 +64,8 @@ export const filesApi = {
     if (params.status !== undefined) {
       formData.append('status', String(params.status));
     }
-    if (params.title) {
-      formData.append('title', params.title);
-    }
-    if (params.description) {
-      formData.append('description', params.description);
-    }
     if (params.coverImage) {
       formData.append('coverImage', params.coverImage);
-    }
-    if (params.allowDownload !== undefined) {
-      formData.append('allowDownload', String(params.allowDownload));
     }
 
     const res = await apiClient.post('/files', formData, {
@@ -78,7 +73,29 @@ export const filesApi = {
         'Content-Type': 'multipart/form-data',
       },
     });
-    return res.data;
+    
+    // 获取上传后的文件信息
+    const uploadedFile = res.data?.data || res.data;
+    
+    // 如果返回的文件路径是相对路径，添加公共路径前缀
+    if (uploadedFile?.fileUrl && !uploadedFile.fileUrl.startsWith('http')) {
+      uploadedFile.fileUrl = resolveImageUrl(uploadedFile.fileUrl);
+    }
+    if (uploadedFile?.coverImage && !uploadedFile.coverImage.startsWith('http')) {
+      uploadedFile.coverImage = resolveImageUrl(uploadedFile.coverImage);
+    }
+    
+    // 如果有 title, description, allowDownload，上传后立即更新
+    if (uploadedFile?.id && (params.title || params.description || params.allowDownload !== undefined)) {
+      const updateData: any = {};
+      if (params.title) updateData.title = params.title;
+      if (params.description) updateData.description = params.description;
+      if (params.allowDownload !== undefined) updateData.allowDownload = params.allowDownload;
+      
+      await apiClient.put(`/files/${uploadedFile.id}`, updateData);
+    }
+    
+    return uploadedFile;
   },
 
   createFile: async (data: {
@@ -122,7 +139,22 @@ export const filesApi = {
       const result = res.data;
       const data = result?.data ?? result;
       const list = Array.isArray(data) ? data : data?.list;
-      return { total: Array.isArray(data) ? data.length : (data?.total ?? (Array.isArray(list) ? list.length : 0)), list: Array.isArray(list) ? list : [] };
+      
+      // 处理返回的文件列表，为相对路径添加公共路径前缀
+      const normalizedList = Array.isArray(list) ? list.map((file: any) => {
+        if (file.fileUrl && !file.fileUrl.startsWith('http')) {
+          file.fileUrl = resolveImageUrl(file.fileUrl);
+        }
+        if (file.coverImage && !file.coverImage.startsWith('http')) {
+          file.coverImage = resolveImageUrl(file.coverImage);
+        }
+        return file;
+      }) : [];
+      
+      return { 
+        total: Array.isArray(data) ? data.length : (data?.total ?? normalizedList.length), 
+        list: normalizedList 
+      };
     } catch {
       return { total: 0, list: [] };
     }
@@ -135,7 +167,19 @@ export const filesApi = {
       const result = res.data;
       const data = result?.data ?? result;
       const list = Array.isArray(data) ? data : data?.list;
-      return Array.isArray(list) ? list : [];
+      
+      // 处理返回的文件列表，为相对路径添加公共路径前缀
+      const normalizedList = Array.isArray(list) ? list.map((file: any) => {
+        if (file.fileUrl && !file.fileUrl.startsWith('http')) {
+          file.fileUrl = resolveImageUrl(file.fileUrl);
+        }
+        if (file.coverImage && !file.coverImage.startsWith('http')) {
+          file.coverImage = resolveImageUrl(file.coverImage);
+        }
+        return file;
+      }) : [];
+      
+      return normalizedList;
     } catch {
       return [];
     }
@@ -171,11 +215,17 @@ export const filesApi = {
       avatar: authorObj.avatar || authorObj.avatarUrl || authorObj.headImg || '',
     } : undefined;
 
+    // 处理文件路径，为相对路径添加公共路径前缀
+    const fileUrl = file?.fileUrl;
+    const coverImage = file?.coverImage;
+    
     return {
       ...file,
       author: normalizedAuthor,
       viewCount: file?.viewCount ?? file?.view_count ?? file?.views ?? 0,
       categoryName: file?.category?.name || file?.categoryName || file?.category_name,
+      fileUrl: fileUrl && !fileUrl.startsWith('http') ? resolveImageUrl(fileUrl) : fileUrl,
+      coverImage: coverImage && !coverImage.startsWith('http') ? resolveImageUrl(coverImage) : coverImage,
     };
   },
 
@@ -328,7 +378,19 @@ export const filesApi = {
       const result = res.data;
       const data = result?.data ?? result;
       const list = Array.isArray(data) ? data : data?.list;
-      return Array.isArray(list) ? list : [];
+      
+      // 处理返回的文件列表，为相对路径添加公共路径前缀
+      const normalizedList = Array.isArray(list) ? list.map((file: any) => {
+        if (file.fileUrl && !file.fileUrl.startsWith('http')) {
+          file.fileUrl = resolveImageUrl(file.fileUrl);
+        }
+        if (file.coverImage && !file.coverImage.startsWith('http')) {
+          file.coverImage = resolveImageUrl(file.coverImage);
+        }
+        return file;
+      }) : [];
+      
+      return normalizedList;
     } catch {
       return [];
     }

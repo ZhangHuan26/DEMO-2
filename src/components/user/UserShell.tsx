@@ -137,7 +137,7 @@ export const UserShell: React.FC = () => {
 
                   <div className="py-1">
                     <Link
-                      to={`/users/${user.id}`}
+                      to="/me/works"
                       onClick={() => setIsUserMenuOpen(false)}
                       className="px-4 py-2 hover:bg-neutral-50 text-neutral-700 hover:text-black flex items-center gap-2.5 transition-colors font-medium"
                     >

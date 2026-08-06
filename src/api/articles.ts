@@ -106,7 +106,17 @@ export const articlesApi = {
 
   // 5.4 POST /articles
   createArticle: async (data: { title: string; content: string; summary?: string; coverImage: string; categoryId: number; status?: number }) => {
-    const res = await apiClient.post('/articles', data);
+    // 移除coverImage中的公共路径前缀
+    let coverImageValue = data.coverImage;
+    const baseUrl = resolveImageUrl('').replace(/\/$/, '');
+    if (coverImageValue.startsWith(baseUrl)) {
+      coverImageValue = coverImageValue.substring(baseUrl.length);
+    }
+    
+    const res = await apiClient.post('/articles', {
+      ...data,
+      coverImage: coverImageValue,
+    });
     return res.data;
   },
 

@@ -1,8 +1,8 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User } from '../types';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { User, Message } from '../types';
 import { authApi } from '../api/auth';
 import { notificationsApi } from '../api/notifications';
-import { chatApi } from '../api/chat';
+import { chatApi, ChatWebSocketService } from '../api/chat';
 
 
 interface AuthContextType {
@@ -11,11 +11,13 @@ interface AuthContextType {
   loading: boolean;
   unreadNotifications: number;
   unreadChats: number;
+  wsConnected: boolean;
   login: (email: string, pass: string) => Promise<{ token: string; user: User }>;
   register: (data: { email: string; password: string; nickName?: string; phone?: string; avatar?: string }) => Promise<{ token: string; user: User }>;
   logout: () => Promise<void>;
   updateUser: (updated: Partial<User>) => void;
   refreshCounts: () => Promise<void>;
+  chatWs: ChatWebSocketService | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,6 +28,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
   const [unreadNotifications, setUnreadNotifications] = useState<number>(0);
   const [unreadChats, setUnreadChats] = useState<number>(0);
+  const [wsConnected, setWsConnected] = useState<boolean>(false);
+  const chatWsRef = useRef<ChatWebSocketService | null>(null);
 
   const refreshCounts = async () => {
     if (!token) return;
@@ -41,6 +45,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // ignore
     }
   };
+
+  // 初始化WebSocket连接
+  useEffect(() => {
+    if (token && user) {
+      // 创建WebSocket服务实例
+      if (!chatWsRef.current) {
+        chatWsRef.current = new ChatWebSocketService();
+      }
+      
+      // 添加全局消息监听器（用于刷新未读数）
+      const globalMessageListener = (msg: Message) => {
+        console.log('[Auth] Received chat message (actual message object):', msg);
+        
+        // 收到新消息时刷新未读数
+        refreshCounts();
+      };
+      
+      const statusListener = (connected: boolean) => {
+        console.log('[Auth] WebSocket status:', connected ? 'Connected' : 'Disconnected');
+        setWsConnected(connected);
+      };
+      
+      chatWsRef.current.addMessageListener(globalMessageListener);
+      chatWsRef.current.addStatusListener(statusListener);
+      
+      // 连接WebSocket
+      chatWsRef.current.connect(token);
+      
+      return () => {
+        // 组件卸载时移除监听器并断开连接
+        if (chatWsRef.current) {
+          chatWsRef.current.removeMessageListener(globalMessageListener);
+          chatWsRef.current.removeStatusListener(statusListener);
+          chatWsRef.current.disconnect();
+        }
+      };
+    } else {
+      // 用户未登录，断开WebSocket
+      if (chatWsRef.current) {
+        chatWsRef.current.disconnect();
+        chatWsRef.current = null;
+      }
+      setWsConnected(false);
+    }
+  }, [token, user]);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -85,10 +134,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     await authApi.logout();
+    if (chatWsRef.current) {
+      chatWsRef.current.disconnect();
+      chatWsRef.current = null;
+    }
     setUser(null);
     setToken(null);
     setUnreadNotifications(0);
     setUnreadChats(0);
+    setWsConnected(false);
   };
 
   const updateUser = (updated: Partial<User>) => {
@@ -103,11 +157,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         unreadNotifications,
         unreadChats,
+        wsConnected,
         login,
         register,
         logout,
         updateUser,
-        refreshCounts
+        refreshCounts,
+        chatWs: chatWsRef.current,
       }}
     >
       {children}

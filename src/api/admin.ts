@@ -78,8 +78,8 @@ export const adminApi = {
     return res.data;
   },
 
-  unhideVideo: async (id: number, reason: string) => {
-    const res = await apiClient.put(`/admin/videos/${id}/unhide`, { reason });
+  unhideVideo: async (id: number, reason?: string) => {
+    const res = await apiClient.put(`/admin/videos/${id}/unhide`, { reason: reason || '恢复正常' });
     return res.data;
   },
 
@@ -99,8 +99,8 @@ export const adminApi = {
     return res.data;
   },
 
-  unhideFile: async (id: number, reason: string) => {
-    const res = await apiClient.put(`/admin/files/${id}/unhide`, { reason });
+  unhideFile: async (id: number, reason?: string) => {
+    const res = await apiClient.put(`/admin/files/${id}/unhide`, { reason: reason || '恢复正常' });
     return res.data;
   },
 
@@ -111,6 +111,71 @@ export const adminApi = {
 
   deleteFile: async (id: number) => {
     const res = await apiClient.delete(`/admin/files/${id}`);
+    return res.data;
+  },
+
+  // Videos Admin
+  hideVideo: async (id: number, reason: string) => {
+    const res = await apiClient.put(`/admin/videos/${id}/hide`, { reason });
+    return res.data;
+  },
+
+  unhideVideo: async (id: number, reason?: string) => {
+    const res = await apiClient.put(`/admin/videos/${id}/unhide`, { reason: reason || '恢复正常' });
+    return res.data;
+  },
+
+  toggleVideoDownload: async (id: number, allowDownload: number, reason?: string) => {
+    const res = await apiClient.put(`/admin/videos/${id}/allow-download`, { allowDownload, reason });
+    return res.data;
+  },
+
+  deleteVideo: async (id: number) => {
+    const res = await apiClient.delete(`/admin/videos/${id}`);
+    return res.data;
+  },
+
+  // Video Comments Admin
+  getVideoComments: async (params?: any) => {
+    try {
+      const res = await apiClient.get('/admin/video-comments', { params });
+      const result = res.data;
+      const data = result?.data ?? result;
+      return data && typeof data === 'object' && 'list' in data ? data : { total: 0, list: [] };
+    } catch {
+      return { total: 0, list: [] };
+    }
+  },
+
+  hideVideoComment: async (id: number, reason: string) => {
+    const res = await apiClient.put(`/admin/video-comments/${id}/hide`, { reason });
+    return res.data;
+  },
+
+  unhideVideoComment: async (id: number, reason?: string) => {
+    const res = await apiClient.put(`/admin/video-comments/${id}/unhide`, { reason: reason || '恢复正常' });
+    return res.data;
+  },
+
+  // File Comments Admin
+  getFileComments: async (params?: any) => {
+    try {
+      const res = await apiClient.get('/admin/file-comments', { params });
+      const result = res.data;
+      const data = result?.data ?? result;
+      return data && typeof data === 'object' && 'list' in data ? data : { total: 0, list: [] };
+    } catch {
+      return { total: 0, list: [] };
+    }
+  },
+
+  hideFileComment: async (id: number, reason: string) => {
+    const res = await apiClient.put(`/admin/file-comments/${id}/hide`, { reason });
+    return res.data;
+  },
+
+  unhideFileComment: async (id: number, reason?: string) => {
+    const res = await apiClient.put(`/admin/file-comments/${id}/unhide`, { reason: reason || '恢复正常' });
     return res.data;
   },
 

@@ -168,11 +168,35 @@ export const FileDetailPage: React.FC = () => {
 
   const fileMediaStage = (
     <div className="w-full max-w-3xl bg-neutral-900 border border-neutral-800 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row gap-6 items-center shadow-xl text-white">
-      <img
-        src={resolveImageUrl(file.coverImage)}
-        alt={file.title}
-        className="w-full md:w-72 h-52 object-cover rounded-2xl border border-neutral-800 shadow-sm"
-      />
+      <div className="w-full md:w-72 h-52 rounded-2xl border border-neutral-800 shadow-sm overflow-hidden bg-neutral-800 flex items-center justify-center">
+        {file.coverImage ? (
+          <img
+            src={resolveImageUrl(file.coverImage)}
+            alt={file.title}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              // 图片加载失败时显示默认图标
+              e.currentTarget.style.display = 'none';
+              const parent = e.currentTarget.parentElement;
+              if (parent) {
+                parent.innerHTML = `<div class="flex flex-col items-center justify-center gap-3 text-neutral-400">
+                  <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                  </svg>
+                  <span class="text-sm font-mono">${file.fileType || 'FILE'}</span>
+                </div>`;
+              }
+            }}
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center gap-3 text-neutral-400">
+            <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+            </svg>
+            <span className="text-sm font-mono">{file.fileType || 'FILE'}</span>
+          </div>
+        )}
+      </div>
 
       <div className="flex-1 space-y-4 text-white w-full">
         <div className="flex items-center gap-2 text-xs font-mono">
@@ -188,7 +212,15 @@ export const FileDetailPage: React.FC = () => {
           {file.description || '高品质设计素材资源文件包，已包含矢量源文件与精细贴图。'}
         </p>
 
-        {canDownload ? (
+        {file.allowDownload === 0 ? (
+          <button
+            disabled
+            className="w-full py-3.5 bg-red-600/80 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 cursor-not-allowed opacity-75"
+          >
+            <Lock className="w-4 h-4" />
+            禁止下载
+          </button>
+        ) : canDownload ? (
           <button
             onClick={handleDownload}
             disabled={downloading}
@@ -232,8 +264,6 @@ export const FileDetailPage: React.FC = () => {
         setReportTarget({ type: 2, id: file.id });
         setIsReportOpen(true);
       }}
-      onPrev={file.id > 1 ? () => navigate(`/files/${file.id - 1}`) : undefined}
-      onNext={() => navigate(`/files/${file.id + 1}`)}
       mediaContent={fileMediaStage}
       tools={['Figma', 'Sketch', 'Photoshop']}
     >
@@ -243,22 +273,22 @@ export const FileDetailPage: React.FC = () => {
           {/* Metadata Row: Category, Publish Time & Views */}
           <div className="flex flex-wrap items-center justify-between gap-2.5">
             <div className="flex flex-wrap items-center gap-2.5">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/20 text-emerald-400 text-[11px] font-bold rounded-full border border-emerald-500/30 shadow-xs">
-                <Folder className="w-3 h-3 text-emerald-400" />
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/20 text-white text-[11px] font-bold rounded-full border border-emerald-500/30 shadow-xs">
+                <Folder className="w-3 h-3 text-white" />
                 {file.category?.name || file.categoryName || '设计资源库'}
               </span>
-              <span className="text-neutral-600 font-mono text-[11px]">•</span>
-              <span className="flex items-center gap-1 text-[11px] text-neutral-400 font-mono">
-                <Clock className="w-3 h-3 text-neutral-500" />
+              <span className="text-white font-mono text-[11px]">•</span>
+              <span className="flex items-center gap-1 text-[11px] text-white font-mono">
+                <Clock className="w-3 h-3 text-white" />
                 {formatPublishTime(file.createdAt)}
               </span>
             </div>
 
             {/* View Count Stat Badge */}
-            <div className="inline-flex items-center gap-1 px-2.5 py-1 bg-neutral-900 rounded-full border border-neutral-800 text-[11px] text-neutral-300 font-mono shadow-xs">
-              <Eye className="w-3 h-3 text-emerald-400" />
+            <div className="inline-flex items-center gap-1 px-2.5 py-1 bg-neutral-900 rounded-full border border-neutral-800 text-[11px] text-white font-mono shadow-xs">
+              <Eye className="w-3 h-3 text-white" />
               <span className="text-white font-bold">{file.viewCount ?? (file as any).views ?? 0}</span>
-              <span className="text-neutral-400">次浏览</span>
+              <span className="text-white">次浏览</span>
             </div>
           </div>
 
@@ -303,14 +333,21 @@ export const FileDetailPage: React.FC = () => {
             </div>
           </div>
 
-          {canDownload && (
+          {file.allowDownload === 0 ? (
+            <button
+              disabled
+              className="px-4 py-2 bg-red-600/80 text-white text-xs font-bold rounded-full flex items-center gap-1.5 cursor-not-allowed opacity-75"
+            >
+              <Lock className="w-3.5 h-3.5" /> 禁止下载
+            </button>
+          ) : canDownload ? (
             <button
               onClick={handleDownload}
               className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-full transition-all cursor-pointer shadow-md shadow-emerald-600/20 flex items-center gap-1.5"
             >
               <Download className="w-3.5 h-3.5" /> 下载设计源文件
             </button>
-          )}
+          ) : null}
         </div>
 
         {/* Liked & Favorited Creator Avatar Wall */}

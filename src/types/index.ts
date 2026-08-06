@@ -209,7 +209,13 @@ export interface Message {
   receiverId: number;
   content: string;
   isRead: number;
+  readAt?: string;
   createdAt: string;
+  // API返回的额外字段（会话列表）
+  senderNickName?: string;
+  senderAvatar?: string;
+  receiverNickName?: string;
+  receiverAvatar?: string;
 }
 
 export interface Conversation {

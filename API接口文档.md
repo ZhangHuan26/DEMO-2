@@ -229,7 +229,8 @@
 | signature | String | 个性签名 |
 | followerCount | Long | 粉丝数 |
 | articleCount | Long | 文章数 |
-| isFollowing | Boolean | 当前登录用户是否已关注此人（未登录为 null） |
+| isFollowing | Boolean | 当前登录用户是否已关注此人（未登录为 false） |
+
 
 
 ---
@@ -240,7 +241,7 @@
 
 - **接口**：`GET /users/{id}`
 - **鉴权**：无需登录（登录态下会附带 `isFollowing` 字段）
-- **功能**：查看指定用户的公开资料和统计信息。私密字段（邮箱、手机号、生日）不返回。
+- **功能**：查看指定用户（创作者）的公开资料和统计信息。私密字段（邮箱、手机号、生日）不返回。
 
 **传参（Path）**：
 
@@ -260,9 +261,15 @@
 | role | Integer | 角色：0-普通用户 1-管理员 |
 | status | Integer | 账号状态：0-正常 1-已冻结 |
 | articleCount | Long | 文章数 |
+| videoCount | Long | 视频数 |
+| fileCount | Long | 文件数 |
+| worksCount | Long | 作品总数（文章+视频+文件） |
+| favoriteCount | Long | 作品收藏总数（该创作者收藏的文章+视频+文件） |
+| commentCount | Long | 作品评论总数（该创作者发表的文章+视频+文件评论） |
 | followerCount | Long | 粉丝数 |
 | followingCount | Long | 关注数 |
 | isFollowing | Boolean | 当前登录用户是否已关注此人（未登录为 false） |
+
 
 ---
 
@@ -627,13 +634,24 @@
 | favoriteCount | Integer | 收藏数 |
 | status | Integer | 可见状态：0-公共 1-私人 |
 | isHidden | Integer | 是否隐藏：0-正常 1-已隐藏 |
-| author | UserBriefVO | 作者简要信息 |
+| author | UserBriefVO | 作者简要信息（id/nickName/avatar/signature/isFollowing） |
 | category | CategoryBriefVO | 分类简要信息 |
 | attachments | List\<FileBriefVO\> | 附件列表（id/originalName/fileSize/allowDownload） |
 | createdAt | LocalDateTime | 创建时间 |
 | updatedAt | LocalDateTime | 更新时间 |
 | isLiked | Boolean | 当前用户是否已点赞 |
 | isFavorited | Boolean | 当前用户是否已收藏 |
+
+**author（UserBriefVO）字段**：
+
+| 字段 | 类型 | 注释 |
+| --- | --- | --- |
+| id | Long | 作者用户id |
+| nickName | String | 作者昵称 |
+| avatar | String | 作者头像 |
+| signature | String | 作者个性签名 |
+| isFollowing | Boolean | 当前登录用户是否已关注该作者（未登录为 false） |
+
 
 ---
 
@@ -1258,7 +1276,7 @@
 | moderationLogId | Long | 最近一次审核日志id（被隐藏/恢复时关联的 ContentModerationLog，可为 null） |
 | createdAt | LocalDateTime | 创建时间 |
 | updatedAt | LocalDateTime | 更新时间 |
-| author | UserBriefVO | 上传者简要信息（id/nickName/avatar/signature） |
+| author | UserBriefVO | 上传者简要信息（id/nickName/avatar/isFollowing） |
 
 
 
@@ -1278,26 +1296,60 @@
 
 **返回字段（data）**：`FileVO` 对象（字段见 10.1）
 
+> `author.isFollowing`：当前登录用户是否已关注该上传者。未登录或未关注时为 `false`，仅登录态下有意义。
+
+
+> **前端交互要求（下载按钮）**：详情页根据返回字段 `allowDownload` 控制下载按钮状态——
+> - `allowDownload = 1`（允许下载）：下载按钮正常显示，可点击下载。
+> - `allowDownload = 0`（禁止下载）：下载按钮置灰/变红，文字展示为「禁止下载」，且不可点击。
+> 后端下载接口 `GET /files/{id}/download` 也会校验 `allow_download=1`，若为 0 会返回错误，前端需提前禁用按钮避免误操作。
+
+
 ---
 
 ### 10.3 上传文件
 
 - **接口**：`POST /files`
-- **鉴权**：登录
+- **鉴权**：登录（**必须携带请求头 `Authorization: Bearer {token}`**，否则返回 400 "未登录或登录已过期"）
 - **功能**：当前登录用户上传一个新文件。使用 `multipart/form-data` 提交。
 
-**传参（Form Data）**：
+**请求头（Header）**：
 
 | 参数 | 类型 | 必填 | 注释 |
 | --- | --- | --- | --- |
-| file | file | 是 | 上传的文件二进制 |
+| Authorization | string | 是 | 登录令牌，格式固定为 `Bearer {token}`。缺失、格式错误或 token 过期都会返回 400 "未登录或登录已过期" |
+
+**传参（Form Data，multipart/form-data）**：
+
+| 参数 | 类型 | 必填 | 注释 |
+| --- | --- | --- | --- |
+| file | file | 是 | 上传的文件二进制（字段名必须为 `file`） |
 | articleId | Long | 否 | 关联文章id |
 | categoryId | Long | 否 | 文件分类id |
 | status | int | 否 | 可见状态：0-公共 1-私人，默认公共 |
 | coverImage | string | 否 | 封面图URL（通过 POST /uploads/image 获取后传入，可为空） |
 
+**请求示例（curl）**：
 
-**返回字段（data）**：上传后的 `FileVO` 对象
+```bash
+curl -X POST http://192.168.100.115:8080/files \
+  -H "Authorization: Bearer <你的token>" \
+  -F "file=@/path/to/your/file.pdf" \
+  -F "categoryId=2" \
+  -F "status=0" \
+  -F "coverImage=https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?q=80&w=800&auto=format&fit=crop"
+```
+
+**常见错误**：
+
+| 错误信息 | 原因 | 解决 |
+| --- | --- | --- |
+| 未登录或登录已过期 | 请求头缺少 `Authorization`，或 token 缺失/格式错误/已过期 | 在请求头加上 `Authorization: Bearer {token}`，确保 token 有效 |
+| 上传失败: 请求不是有效的文件上传请求，请使用 multipart/form-data 格式提交 | 请求未按 `multipart/form-data` 格式发送（如误用 application/json） | 改用 `multipart/form-data`，文件字段名必须为 `file` |
+| 上传失败: 文件大小超出限制（单文件最大10MB，单次请求最大20MB） | 文件超过大小限制 | 压缩文件或分片上传 |
+
+**返回字段（data）**：上传后的 `FileVO` 对象（字段见 10.1）
+
 
 ---
 
@@ -1475,10 +1527,12 @@
 | senderAvatar | String | 发送者头像（联表带出） |
 | receiverNickName | String | 接收者昵称（联表带出） |
 | receiverAvatar | String | 接收者头像（联表带出） |
+| unreadCount | Long | 该会话的未读消息数（仅会话列表接口返回） |
 
 ---
 
 ### 11.2 与某用户的聊天记录
+
 
 - **接口**：`GET /chat/conversations/{peerId}`
 - **鉴权**：登录
@@ -1734,12 +1788,15 @@
 | status | Integer | 可见状态：0-公共 1-私人 |
 | isHidden | Integer | 是否隐藏：0-正常 1-已隐藏 |
 | allowDownload | Integer | 是否允许下载：0-禁止 1-允许 |
-| author | UserBriefVO | 作者简要信息 |
+| author | UserBriefVO | 作者简要信息（id/nickName/avatar/isFollowing） |
 | category | CategoryBriefVO | 分类简要信息 |
 | createdAt | LocalDateTime | 创建时间 |
 | updatedAt | LocalDateTime | 更新时间 |
 | isLiked | Boolean | 当前用户是否已点赞 |
 | isFavorited | Boolean | 当前用户是否已收藏 |
+
+> `author.isFollowing`：当前登录用户是否已关注该作者。未登录或未关注时为 `false`，仅登录态下有意义。
+
 
 ---
 
@@ -3035,3 +3092,315 @@ Authorization: Bearer {token}
 | 视频更新 | 作为 `PUT /videos/{id}` 的 videoUrl 参数 |
 
 
+# 博客系统接口功能详解（五）
+
+> 本文档基于后端实际代码（Controller / DTO / Entity）整理，罗列所有接口的功能、能做什么、返回字段名及注释、传参及注释。
+> 本文档为「接口功能详解（一）（二）（三）（四）」的**补充篇**，补齐此前遗漏的接口：文章关注动态、文章/文件/视频的点赞用户列表、收藏用户列表、既点赞又收藏用户列表、管理员文章分类列表。
+> 统一响应格式：`{ "code": 0, "message": "success", "data": {...} }`，`code=0` 表示成功。
+> 鉴权方式：除标注"无需登录"外，均需请求头 `Authorization: Bearer {token}`。
+
+---
+
+## 目录
+
+- [23. 文章模块补充](#23-文章模块补充)
+- [24. 文件模块补充](#24-文件模块补充)
+- [25. 视频模块补充](#25-视频模块补充)
+- [26. 管理员后台补充](#26-管理员后台补充)
+- [27. 内容模块补充（关注动态）](#27-内容模块补充关注动态)
+
+
+---
+
+## 23. 文章模块补充
+
+### 23.1 文章关注动态
+
+- **接口**：`GET /articles/feed`
+- **鉴权**：登录
+- **功能**：返回当前登录用户关注的人发布的**文章**动态，分页返回。与 `GET /content/feed`（内容广场聚合，混合文章/视频/文件）不同，本接口只返回文章类型的内容，用于"关注-文章"专属信息流。
+
+**传参（Query）**：
+
+| 参数 | 类型 | 必填 | 默认值 | 注释 |
+| --- | --- | --- | --- | --- |
+| page | int | 否 | 1 | 页码，从1开始 |
+| size | int | 否 | 10 | 每页条数 |
+
+**返回字段（data）**：分页的 `ArticleCardVO` 列表
+
+| 字段 | 类型 | 注释 |
+| --- | --- | --- |
+| id | Long | 文章id |
+| title | String | 标题 |
+| coverImage | String | 封面图 |
+| summary | String | 摘要 |
+| viewCount | Integer | 浏览量 |
+| likeCount | Integer | 点赞数 |
+| favoriteCount | Integer | 收藏数 |
+| author | UserBriefVO | 作者简要信息（id/nickName/avatar/signature） |
+| category | CategoryBriefVO | 分类简要信息（id/name） |
+| createdAt | LocalDateTime | 创建时间 |
+| isLiked | Boolean | 当前用户是否已点赞 |
+| isFavorited | Boolean | 当前用户是否已收藏 |
+
+---
+
+### 23.2 点赞该文章的用户列表
+
+- **接口**：`GET /articles/{id}/likes`
+- **鉴权**：无需登录
+- **功能**：返回所有给这篇文章点过赞的用户基本信息（昵称、头像等），按点赞时间倒序。用于前端展示"点赞头像墙"。
+
+**传参（Path）**：
+
+| 参数 | 类型 | 必填 | 注释 |
+| --- | --- | --- | --- |
+| id | Long | 是 | 文章id |
+
+**返回字段（data）**：`User` 实体列表
+
+| 字段 | 类型 | 注释 |
+| --- | --- | --- |
+| id | Long | 用户id |
+| email | String | 注册邮箱 |
+| phone | String | 手机号 |
+| nickName | String | 用户昵称 |
+| avatar | String | 头像链接 |
+| gender | Integer | 性别：0-保密 1-男 2-女 |
+| birthday | LocalDate | 出生日期 |
+| signature | String | 个性签名 |
+| role | Integer | 角色：0-普通用户 1-管理员 |
+| status | Integer | 账号状态：0-正常 1-已冻结 |
+| createdAt | LocalDateTime | 注册时间 |
+
+---
+
+### 23.3 收藏该文章的用户列表
+
+- **接口**：`GET /articles/{id}/favorites`
+- **鉴权**：无需登录
+- **功能**：返回所有收藏过这篇文章的用户基本信息（昵称、头像等），按收藏时间倒序。用于前端展示"收藏头像墙"。
+
+**传参（Path）**：
+
+| 参数 | 类型 | 必填 | 注释 |
+| --- | --- | --- | --- |
+| id | Long | 是 | 文章id |
+
+**返回字段（data）**：`User` 实体列表（字段见 23.2）
+
+---
+
+### 23.4 既点赞又收藏该文章的用户列表
+
+- **接口**：`GET /articles/{id}/duplicates`
+- **鉴权**：无需登录
+- **功能**：返回点赞列表和收藏列表中**重复出现**的用户（即既点赞又收藏了同一篇文章的用户）。用于查看哪些用户同时出现在点赞和收藏列表中。
+
+**传参（Path）**：
+
+| 参数 | 类型 | 必填 | 注释 |
+| --- | --- | --- | --- |
+| id | Long | 是 | 文章id |
+
+**返回字段（data）**：`User` 实体列表（字段见 23.2）
+
+---
+
+## 24. 文件模块补充
+
+### 24.1 点赞该文件的用户列表
+
+- **接口**：`GET /files/{id}/likes`
+- **鉴权**：无需登录
+- **功能**：返回所有给这个文件点过赞的用户基本信息（昵称、头像等），按点赞时间倒序。用于前端展示"点赞头像墙"。
+
+**传参（Path）**：
+
+| 参数 | 类型 | 必填 | 注释 |
+| --- | --- | --- | --- |
+| id | Long | 是 | 文件id |
+
+**返回字段（data）**：`User` 实体列表（字段见 23.2）
+
+---
+
+### 24.2 收藏该文件的用户列表
+
+- **接口**：`GET /files/{id}/favorites`
+- **鉴权**：无需登录
+- **功能**：返回所有收藏过这个文件的用户基本信息（昵称、头像等），按收藏时间倒序。用于前端展示"收藏头像墙"。
+
+**传参（Path）**：
+
+| 参数 | 类型 | 必填 | 注释 |
+| --- | --- | --- | --- |
+| id | Long | 是 | 文件id |
+
+**返回字段（data）**：`User` 实体列表（字段见 23.2）
+
+---
+
+### 24.3 既点赞又收藏该文件的用户列表
+
+- **接口**：`GET /files/{id}/duplicates`
+- **鉴权**：无需登录
+- **功能**：返回点赞列表和收藏列表中**重复出现**的用户（即既点赞又收藏了同一文件的用户）。
+
+**传参（Path）**：
+
+| 参数 | 类型 | 必填 | 注释 |
+| --- | --- | --- | --- |
+| id | Long | 是 | 文件id |
+
+**返回字段（data）**：`User` 实体列表（字段见 23.2）
+
+---
+
+## 25. 视频模块补充
+
+### 25.1 点赞该视频的用户列表
+
+- **接口**：`GET /videos/{id}/likes`
+- **鉴权**：无需登录
+- **功能**：返回所有给这个视频点过赞的用户基本信息（昵称、头像等），按点赞时间倒序。用于前端展示"点赞头像墙"。
+
+**传参（Path）**：
+
+| 参数 | 类型 | 必填 | 注释 |
+| --- | --- | --- | --- |
+| id | Long | 是 | 视频id |
+
+**返回字段（data）**：`User` 实体列表（字段见 23.2）
+
+---
+
+### 25.2 收藏该视频的用户列表
+
+- **接口**：`GET /videos/{id}/favorites`
+- **鉴权**：无需登录
+- **功能**：返回所有收藏过这个视频的用户基本信息（昵称、头像等），按收藏时间倒序。用于前端展示"收藏头像墙"。
+
+**传参（Path）**：
+
+| 参数 | 类型 | 必填 | 注释 |
+| --- | --- | --- | --- |
+| id | Long | 是 | 视频id |
+
+**返回字段（data）**：`User` 实体列表（字段见 23.2）
+
+---
+
+### 25.3 既点赞又收藏该视频的用户列表
+
+- **接口**：`GET /videos/{id}/duplicates`
+- **鉴权**：无需登录
+- **功能**：返回点赞列表和收藏列表中**重复出现**的用户（即既点赞又收藏了同一视频的用户）。
+
+**传参（Path）**：
+
+| 参数 | 类型 | 必填 | 注释 |
+| --- | --- | --- | --- |
+| id | Long | 是 | 视频id |
+
+**返回字段（data）**：`User` 实体列表（字段见 23.2）
+
+---
+
+## 26. 管理员后台补充
+
+### 26.1 管理员-文章分类列表
+
+- **接口**：`GET /admin/article-categories`
+- **鉴权**：管理员
+- **功能**：查看全站所有文章分类（分页），支持按分类名称关键字搜索。文章分类为全站统一分类，由管理员统一维护。与公开接口 `GET /article-categories`（不分页、返回全部）不同，本接口用于后台管理页面的分页展示。
+
+**传参（Query）**：
+
+| 参数 | 类型 | 必填 | 默认值 | 注释 |
+| --- | --- | --- | --- | --- |
+| keyword | string | 否 | - | 按分类名称模糊匹配 |
+| page | int | 否 | 1 | 页码，从1开始 |
+| size | int | 否 | 10 | 每页条数 |
+
+**返回字段（data）**：分页的 `UserCategory` 列表
+
+| 字段 | 类型 | 注释 |
+| --- | --- | --- |
+| id | Long | 分类id |
+| name | String | 分类名称 |
+| description | String | 分类简介 |
+| coverImage | String | 分类图片链接 |
+| sortOrder | Integer | 排序值，越小越靠前 |
+| createdAt | LocalDateTime | 创建时间 |
+| articleCount | Long | 该分类下的文章数量 |
+
+---
+
+## 27. 内容模块补充（关注动态）
+
+### 27.1 关注动态（关注的人发布的内容聚合）
+
+- **接口**：`GET /content/follow-feed`
+- **鉴权**：登录
+- **功能**：返回当前登录用户**关注的人**发布的**公共且未隐藏**的文章、视频、文件，三种内容**按创建时间倒序合并**后分页返回。用于"关注-信息流"页面，混合展示关注的人发布的所有类型内容。
+  - 与 `GET /articles/feed`（只返回关注的人的文章）不同，本接口同时聚合文章/视频/文件三种内容。
+  - 与 `GET /content/feed`（内容广场，返回全站所有公共内容）不同，本接口只返回**关注的人**发布的内容。
+  - 只返回公共（`status=0`）且未隐藏（`is_hidden=0`）的内容，私人内容不展示。
+
+**传参（Query）**：
+
+| 参数 | 类型 | 必填 | 默认值 | 注释 |
+| --- | --- | --- | --- | --- |
+| type | string | 否 | - | 内容类型筛选：article-文章 / video-视频 / file-文件，为空返回全部 |
+| page | int | 否 | 1 | 页码，从1开始 |
+| size | int | 否 | 10 | 每页条数 |
+
+**返回字段（data）**：分页的 `ContentCardVO` 列表（统一内容卡片）
+
+| 字段 | 类型 | 注释 |
+| --- | --- | --- |
+| contentType | Integer | 内容类型：1-图文(文章) / 2-视频 / 3-文件 |
+| id | Long | 内容id（对应文章/视频/文件主键） |
+| title | String | 标题（文章/视频标题，文件为原始文件名） |
+| coverImage | String | 封面图（文章/视频封面；文件可为空） |
+| summary | String | 摘要/描述（文章摘要、视频描述、文件可为空） |
+| viewCount | Integer | 阅读量（文章/视频浏览量；文件为下载量） |
+| likeCount | Integer | 点赞数 |
+| favoriteCount | Integer | 收藏数 |
+| commentCount | Integer | 评论数 |
+| authorId | Long | 创作者id |
+| authorName | String | 创作者昵称 |
+| authorAvatar | String | 创作者头像 |
+| categoryId | Long | 分类id |
+| categoryName | String | 分类名称 |
+| categoryCover | String | 分类封面图 |
+| duration | Integer | 视频时长（秒），仅视频有 |
+| fileSize | Long | 文件大小（字节），视频和文件都有 |
+| fileType | Integer | 文件大类：0-其他 1-图片 2-文档 3-视频 4-音频 5-压缩包，仅文件有 |
+| fileExt | String | 文件扩展名，仅文件有 |
+| filePath | String | 文件访问路径，仅文件有 |
+| createdAt | LocalDateTime | 创建时间 |
+
+**请求示例（curl）**：
+
+```bash
+curl -X GET "http://192.168.100.115:8080/content/follow-feed?page=1&size=10" \
+  -H "Authorization: Bearer <你的token>"
+```
+
+---
+
+## 附：已停用（不对外提供）的接口说明
+
+
+以下 Controller 类在代码中已标注"已停用"，**不再注册为 Spring Controller**，因此不对外提供接口，前端无需对接：
+
+| 类名 | 说明 |
+| --- | --- |
+| ArticleLikeController | 文章点赞接口（已停用），点赞/取消点赞已由 `POST/DELETE /articles/{id}/like` 提供 |
+| ArticleFavoriteController | 文章收藏接口（已停用），收藏/取消收藏已由 `POST/DELETE /articles/{id}/favorite` 提供 |
+| ContentStatusController | 内容可见状态接口（已停用），各模块已提供各自的 `PUT /{module}/{id}/status` |
+| VisitorController | 访客接口（已停用），API 文档中不存在访客模块 |
+| ModerationLogController | 审核日志接口（已停用），已由 `GET /admin/moderation-logs` 提供 |

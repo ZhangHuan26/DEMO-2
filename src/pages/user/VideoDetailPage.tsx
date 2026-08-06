@@ -188,8 +188,6 @@ export const VideoDetailPage: React.FC = () => {
         setReportTarget({ type: 1, id: video.id });
         setIsReportOpen(true);
       }}
-      onPrev={video.id > 1 ? () => navigate(`/videos/${video.id - 1}`) : undefined}
-      onNext={() => navigate(`/videos/${video.id + 1}`)}
       mediaContent={videoPlayerStage}
       tools={['After Effects', 'Premiere Pro', 'Cinema 4D']}
     >
@@ -200,19 +198,19 @@ export const VideoDetailPage: React.FC = () => {
           {/* Metadata Row: Category, Duration, Publish Time & Views */}
           <div className="flex flex-wrap items-center justify-between gap-2.5">
             <div className="flex flex-wrap items-center gap-2.5">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/20 text-purple-400 text-[11px] font-bold rounded-full border border-purple-500/30 shadow-xs">
-                <Play className="w-3 h-3 fill-purple-400 text-purple-400" />
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/20 text-white text-[11px] font-bold rounded-full border border-purple-500/30 shadow-xs">
+                <Play className="w-3 h-3 fill-white text-white" />
                 {video.category?.name || video.categoryName || '动效视频秀场'}
               </span>
-              <span className="text-neutral-600 font-mono text-[11px]">•</span>
-              <span className="flex items-center gap-1 text-[11px] text-neutral-400 font-mono">
-                <Clock className="w-3 h-3 text-neutral-500" />
+              <span className="text-white font-mono text-[11px]">•</span>
+              <span className="flex items-center gap-1 text-[11px] text-white font-mono">
+                <Clock className="w-3 h-3 text-white" />
                 {formatPublishTime(video.createdAt)}
               </span>
               {video.duration && (
                 <>
-                  <span className="text-neutral-600 font-mono text-[11px]">•</span>
-                  <span className="text-[11px] text-purple-400 font-mono">
+                  <span className="text-white font-mono text-[11px]">•</span>
+                  <span className="text-[11px] text-white font-mono">
                     时长: {video.duration}
                   </span>
                 </>
@@ -220,10 +218,10 @@ export const VideoDetailPage: React.FC = () => {
             </div>
 
             {/* View Count Stat Badge */}
-            <div className="inline-flex items-center gap-1 px-2.5 py-1 bg-neutral-900 rounded-full border border-neutral-800 text-[11px] text-neutral-300 font-mono shadow-xs">
-              <Eye className="w-3 h-3 text-purple-400" />
+            <div className="inline-flex items-center gap-1 px-2.5 py-1 bg-neutral-900 rounded-full border border-neutral-800 text-[11px] text-white font-mono shadow-xs">
+              <Eye className="w-3 h-3 text-white" />
               <span className="text-white font-bold">{video.viewCount}</span>
-              <span className="text-neutral-400">次播放</span>
+              <span className="text-white">次播放</span>
             </div>
           </div>
 

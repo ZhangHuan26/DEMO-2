@@ -196,8 +196,6 @@ export const ArticleDetailPage: React.FC = () => {
         setReportTarget({ type: 0, id: article.id });
         setIsReportOpen(true);
       }}
-      onPrev={article.id > 1 ? () => navigate(`/articles/${article.id - 1}`) : undefined}
-      onNext={() => navigate(`/articles/${article.id + 1}`)}
     >
       {/* Main Details Body */}
       <div className="space-y-8 text-white">
@@ -206,22 +204,22 @@ export const ArticleDetailPage: React.FC = () => {
           {/* Metadata Row: Category, Publish Time & Views */}
           <div className="flex flex-wrap items-center justify-between gap-2.5">
             <div className="flex flex-wrap items-center gap-2.5">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#0057FF]/20 text-[#0057FF] text-[11px] font-bold rounded-full border border-[#0057FF]/30 shadow-xs">
-                <Tag className="w-3 h-3 text-[#0057FF]" />
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#0057FF]/20 text-white text-[11px] font-bold rounded-full border border-[#0057FF]/30 shadow-xs">
+                <Tag className="w-3 h-3 text-white" />
                 {article.category?.name || article.categoryName || '图文视觉设计'}
               </span>
-              <span className="text-neutral-600 font-mono text-[11px]">•</span>
-              <span className="flex items-center gap-1 text-[11px] text-neutral-400 font-mono">
-                <Clock className="w-3 h-3 text-neutral-500" />
+              <span className="text-white font-mono text-[11px]">•</span>
+              <span className="flex items-center gap-1 text-[11px] text-white font-mono">
+                <Clock className="w-3 h-3 text-white" />
                 {formatPublishTime(article.createdAt)}
               </span>
             </div>
 
             {/* View Count Stat Badge */}
-            <div className="inline-flex items-center gap-1 px-2.5 py-1 bg-neutral-900 rounded-full border border-neutral-800 text-[11px] text-neutral-300 font-mono shadow-xs">
-              <Eye className="w-3 h-3 text-[#0057FF]" />
+            <div className="inline-flex items-center gap-1 px-2.5 py-1 bg-neutral-900 rounded-full border border-neutral-800 text-[11px] text-white font-mono shadow-xs">
+              <Eye className="w-3 h-3 text-white" />
               <span className="text-white font-bold">{article.viewCount}</span>
-              <span className="text-neutral-400">次浏览</span>
+              <span className="text-white">次浏览</span>
             </div>
           </div>
 

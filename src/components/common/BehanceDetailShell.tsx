@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
-  X, ChevronLeft, ChevronRight, Share2, ThumbsUp, Star,
+  X, Share2, ThumbsUp, Star,
   MessageSquare, UserPlus, Eye, Flag, Check
 } from 'lucide-react';
 import { User } from '../../types';
@@ -26,8 +26,6 @@ interface BehanceDetailShellProps {
   onShare?: () => void;
   onOpenChat?: () => void;
   onReport?: () => void;
-  onPrev?: () => void;
-  onNext?: () => void;
   children?: React.ReactNode;
   mediaContent?: React.ReactNode;
   tools?: string[];
@@ -51,8 +49,6 @@ export const BehanceDetailShell: React.FC<BehanceDetailShellProps> = ({
   onShare,
   onOpenChat,
   onReport,
-  onPrev,
-  onNext,
   children,
   mediaContent,
 }) => {
@@ -85,28 +81,6 @@ export const BehanceDetailShell: React.FC<BehanceDetailShellProps> = ({
       <div className="flex-1 overflow-y-auto min-h-0 relative bg-neutral-950">
         {/* 2. Main Stage Media Display Canvas */}
         <div className="relative w-full bg-neutral-900/60 min-h-[420px] md:min-h-[520px] flex items-center justify-center py-8 px-4 md:px-16 overflow-hidden border-b border-neutral-800/80">
-          {/* Left Edge Flip Navigation */}
-          {onPrev && (
-            <button
-              onClick={onPrev}
-              className="absolute left-3 md:left-6 top-1/2 -translate-y-1/2 z-30 flex items-center gap-1.5 px-3.5 py-2.5 bg-neutral-900/90 hover:bg-neutral-800 text-neutral-300 hover:text-white text-xs font-bold rounded-full border border-neutral-800 backdrop-blur-md transition-all cursor-pointer shadow-xl group"
-            >
-              <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-              <span className="hidden sm:inline">上一步</span>
-            </button>
-          )}
-
-          {/* Right Edge Flip Navigation */}
-          {onNext && (
-            <button
-              onClick={onNext}
-              className="absolute right-3 md:right-6 top-1/2 -translate-y-1/2 z-30 flex items-center gap-1.5 px-3.5 py-2.5 bg-neutral-900/90 hover:bg-neutral-800 text-neutral-300 hover:text-white text-xs font-bold rounded-full border border-neutral-800 backdrop-blur-md transition-all cursor-pointer shadow-xl group"
-            >
-              <span className="hidden sm:inline">下一步</span>
-              <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-            </button>
-          )}
-
           {/* Center Media Showcase (Fixed width, height auto according to ratio, no cropping) */}
           <div className="max-w-4xl w-full mx-auto flex items-center justify-center relative px-2 sm:px-4">
             {mediaContent ? (

@@ -21,6 +21,7 @@ import { NotificationsPage } from './pages/user/NotificationsPage';
 import { SettingsPage } from './pages/user/SettingsPage';
 import { MyFavoritesPage } from './pages/user/MyFavoritesPage';
 import { MyFilesPage } from './pages/user/MyFilesPage';
+import { MyWorksPage } from './pages/user/MyWorksPage';
 import { MyAppealsPage } from './pages/user/MyAppealsPage';
 
 // Admin Pages
@@ -81,6 +82,7 @@ export function App() {
 
             {/* User Account & Center */}
             <Route path="users/:id" element={<UserProfilePage />} />
+            <Route path="me/works" element={<MyWorksPage />} />
             <Route path="creator" element={<CreatorDashboardPage />} />
             <Route path="notifications" element={<NotificationsPage />} />
             <Route path="settings" element={<SettingsPage />} />

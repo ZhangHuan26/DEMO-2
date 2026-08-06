@@ -221,7 +221,8 @@ export const CreateWorkModal: React.FC<CreateWorkModalProps> = ({
           });
         } else if (workType === 'file') {
           if (selectedResourceFile) {
-            const uploadRes = await filesApi.uploadFile({
+            // uploadFile 内部已经处理 title, description, allowDownload 的更新
+            await filesApi.uploadFile({
               file: selectedResourceFile,
               categoryId,
               status,
@@ -230,17 +231,6 @@ export const CreateWorkModal: React.FC<CreateWorkModalProps> = ({
               coverImage,
               allowDownload,
             });
-            const fileData = uploadRes?.data || uploadRes;
-            const createdFileId = fileData?.id;
-            if (createdFileId) {
-              await filesApi.updateFile(createdFileId, {
-                title,
-                description: fileDesc,
-                coverImage,
-                allowDownload,
-                categoryId,
-              });
-            }
           } else {
             await filesApi.createFile({
               title,

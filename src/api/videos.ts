@@ -1,6 +1,7 @@
 import { apiClient } from './client';
 import { Video, Comment, Category, AllCategoriesResponse } from '../types';
 import { normalizeComment } from '../utils/normalize';
+import { LOCAL_SERVER_HOST } from '../config/env';
 
 export const videosApi = {
   // 12.1 GET /video-categories
@@ -339,8 +340,7 @@ export const videosApi = {
     }
 
     try {
-      const baseUrl = (import.meta as any).env?.VITE_API_BASE_URL || '';
-      const response = await fetch(`${baseUrl}/videos/${id}/download`, {
+      const response = await fetch(`${LOCAL_SERVER_HOST}/videos/${id}/download`, {
         method: 'GET',
         headers
       });

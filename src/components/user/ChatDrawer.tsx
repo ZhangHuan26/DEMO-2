@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { X, Send, MessageSquare, User as UserIcon, Users, Smile, Search, ExternalLink, Clock, Sparkles } from 'lucide-react';
 import { chatApi, ChatFriend } from '../../api/chat';
@@ -31,6 +31,8 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({ isOpen, onClose, targetU
       return [];
     }
   });
+  // 后端有消息的会话列表（别人发给我的临时会话也能显示）
+  const [serverChats, setServerChats] = useState<Conversation[]>([]);
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
 
@@ -97,6 +99,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({ isOpen, onClose, targetU
   useEffect(() => {
     if (isOpen) {
       loadFriends();
+      loadConversations();
     }
   }, [isOpen]);
 
@@ -139,6 +142,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({ isOpen, onClose, targetU
 
     const handleNewMessage = (msg: Message) => {
       loadFriends();
+      loadConversations();
       refreshCounts();
       
       if (selectedPeer && (msg.senderId === selectedPeer.id || msg.receiverId === selectedPeer.id)) {
@@ -174,6 +178,26 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({ isOpen, onClose, targetU
     }
   };
 
+  // 加载后端会话列表（含别人发给我的临时会话）
+  const loadConversations = async () => {
+    try {
+      const convs = await chatApi.getConversations();
+      setServerChats(convs);
+    } catch (err) {
+      console.error('Failed to load conversations:', err);
+    }
+  };
+
+  // 合并本地临时会话 + 后端有消息的会话（按用户ID去重）
+  const mergedTempChats = useMemo(() => {
+    const map = new Map<number, User>();
+    tempChats.forEach(u => map.set(u.id, u));
+    serverChats.forEach(c => {
+      if (c.peerUser) map.set(c.peerUser.id, c.peerUser);
+    });
+    return Array.from(map.values());
+  }, [tempChats, serverChats]);
+
   const loadMessages = async (peerId: number) => {
     setLoading(true);
     try {
@@ -185,6 +209,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({ isOpen, onClose, targetU
       await chatApi.markConversationRead(peerId);
       await refreshCounts();
       loadFriends();
+      loadConversations();
     } catch (err) {
       console.error('Failed to load messages:', err);
     } finally {
@@ -251,6 +276,8 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({ isOpen, onClose, targetU
       }
       return updated;
     });
+    // 同时从后端会话列表视图中移除
+    setServerChats(prev => prev.filter(c => c.peerUser?.id !== userId));
     
     if (selectedPeer?.id === userId) {
       setSelectedPeer(null);
@@ -319,7 +346,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({ isOpen, onClose, targetU
               {/* Tab Switcher */}
               <div className="p-2 border-b border-neutral-200/80 bg-white grid grid-cols-3 gap-1">
                 {[
-                  { id: 'temp', label: '临时', icon: MessageSquare, count: tempChats.length },
+                  { id: 'temp', label: '临时', icon: MessageSquare, count: mergedTempChats.length },
                   { id: 'friends', label: '好友', icon: Users, count: friends.length },
                   { id: 'search', label: '查找', icon: Search },
                 ].map((tab) => {
@@ -349,20 +376,29 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({ isOpen, onClose, targetU
               <div className="flex-1 overflow-y-auto divide-y divide-neutral-100">
                 {activeTab === 'temp' && (
                   <>
-                    {tempChats.length === 0 ? (
+                    {mergedTempChats.length === 0 ? (
                       <div className="p-8 text-center text-xs text-neutral-400 space-y-2 mt-6">
                         <MessageSquare className="w-8 h-8 text-neutral-300 mx-auto stroke-1" />
                         <p className="font-bold text-neutral-600">暂无临时会话</p>
                         <p className="text-[11px] text-neutral-400 leading-relaxed">可在作品页面点击“私信作者”发起即时沟通</p>
                       </div>
                     ) : (
-                      tempChats.map((chat) => {
+                      mergedTempChats.map((chat) => {
                         const isSelected = selectedPeer?.id === chat.id;
+                        const unreadCount = serverChats.find(c => c.peerUser?.id === chat.id)?.unreadCount || 0;
                         return (
-                          <button
+                          <div
                             key={chat.id}
+                            role="button"
+                            tabIndex={0}
                             onClick={() => setSelectedPeer(chat)}
-                            className={`w-full p-3.5 text-left flex items-center gap-3 transition-all cursor-pointer group relative ${
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setSelectedPeer(chat);
+                              }
+                            }}
+                            className={`w-full p-3.5 text-left flex items-center gap-3 transition-all cursor-pointer group relative outline-none focus-visible:ring-2 focus-visible:ring-[#0057FF]/40 ${
                               isSelected
                                 ? 'bg-white border-l-4 border-l-[#0057FF] shadow-xs'
                                 : 'hover:bg-white/80'
@@ -384,6 +420,11 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({ isOpen, onClose, targetU
                                 {chat.signature || '临时私信会话'}
                               </div>
                             </div>
+                            {unreadCount > 0 && (
+                              <span className="bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">
+                                {unreadCount}
+                              </span>
+                            )}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -394,7 +435,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({ isOpen, onClose, targetU
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
-                          </button>
+                          </div>
                         );
                       })
                     )}

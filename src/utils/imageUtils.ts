@@ -1,3 +1,5 @@
+import { LOCAL_SERVER_HOST } from '../config/env';
+
 export function formatImageUrl(
   url?: string,
   fallback = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop'
@@ -16,5 +18,5 @@ export function formatImageUrl(
 
   // Local file name or path
   const fileName = trimmed.replace(/^\/+/, '');
-  return `http://192.168.100.115:8080/${fileName}`;
+  return `${LOCAL_SERVER_HOST.replace(/\/$/, '')}/${fileName}`;
 }

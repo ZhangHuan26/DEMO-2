@@ -1005,14 +1005,14 @@ export const UserProfilePage: React.FC = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`relative px-4 py-2.5 text-xs font-bold transition-colors cursor-pointer whitespace-nowrap flex items-center gap-2 shrink-0 ${
+                    className={`relative px-3 py-1.5 text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
                       isActive ? 'text-[#0057FF] font-black' : 'text-neutral-500 hover:text-neutral-900'
                     }`}
                   >
-                    <TabIcon className="w-4 h-4" />
+                    <TabIcon className="w-3.5 h-3.5" />
                     <span>{tab.label}</span>
                     {typeof tab.count === 'number' && (
-                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold ${
+                      <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-mono font-bold ${
                         isActive ? 'bg-blue-50 text-[#0057FF] border border-blue-200' : 'bg-neutral-100 text-neutral-500'
                       }`}>
                         {tab.count}
@@ -1034,10 +1034,10 @@ export const UserProfilePage: React.FC = () => {
             {activeTab === 'works' && (
               <div className="flex flex-wrap items-center justify-between md:justify-end gap-3 text-xs">
                 {/* 分类药丸 */}
-                <div className="flex items-center gap-1.5 p-1 bg-neutral-100/80 rounded-xl">
+                <div className="flex items-center gap-1 p-0.5 bg-neutral-100/80 rounded-xl">
                   <button
                     onClick={() => setWorksSubTab('all')}
-                    className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                    className={`px-2.5 py-0.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                       worksSubTab === 'all'
                         ? 'bg-white text-neutral-900 shadow-2xs'
                         : 'text-neutral-600 hover:text-neutral-900'
@@ -1047,7 +1047,7 @@ export const UserProfilePage: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setWorksSubTab('articles')}
-                    className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                    className={`px-2.5 py-0.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                       worksSubTab === 'articles'
                         ? 'bg-white text-neutral-900 shadow-2xs'
                         : 'text-neutral-600 hover:text-neutral-900'
@@ -1057,7 +1057,7 @@ export const UserProfilePage: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setWorksSubTab('videos')}
-                    className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                    className={`px-2.5 py-0.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                       worksSubTab === 'videos'
                         ? 'bg-white text-neutral-900 shadow-2xs'
                         : 'text-neutral-600 hover:text-neutral-900'
@@ -1067,7 +1067,7 @@ export const UserProfilePage: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setWorksSubTab('files')}
-                    className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                    className={`px-2.5 py-0.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                       worksSubTab === 'files'
                         ? 'bg-white text-neutral-900 shadow-2xs'
                         : 'text-neutral-600 hover:text-neutral-900'

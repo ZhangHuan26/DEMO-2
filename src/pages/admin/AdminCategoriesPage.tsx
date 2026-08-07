@@ -5,6 +5,7 @@ import { articlesApi } from '../../api/articles';
 import { videosApi } from '../../api/videos';
 import { filesApi } from '../../api/files';
 import { BehanceImagePicker } from '../../components/common/BehanceImagePicker';
+import { showToast } from '../../components/common/Toast';
 
 type CategoryType = 'article' | 'video' | 'file';
 
@@ -94,7 +95,7 @@ export const AdminCategoriesPage: React.FC = () => {
       setIsOpen(false);
       loadCategories(catType);
     } catch {
-      alert('保存分类失败。');
+      showToast({ message: '保存分类失败。', type: 'error' });
     }
   };
 
@@ -109,7 +110,7 @@ export const AdminCategoriesPage: React.FC = () => {
       setCategories(prev => prev.filter(c => String(c.id) !== String(id)));
       setDeleteCategoryItem(null);
     } catch (err: any) {
-      alert(err?.message || '删除失败。');
+      showToast({ message: err?.message || '删除失败。', type: 'error' });
     } finally {
       setIsDeleting(false);
     }

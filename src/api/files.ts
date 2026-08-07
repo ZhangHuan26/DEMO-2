@@ -3,6 +3,34 @@ import { FileItem, Comment, Category } from '../types';
 import { normalizeComment } from '../utils/normalize';
 import { resolveImageUrl } from '../config/env';
 
+// 后端 FileVO 的 fileType 是整数分类(0-5)，前端需要显示为字符串
+const FILE_TYPE_MAP: Record<number, string> = {
+  0: '其他',
+  1: '图片',
+  2: '文档',
+  3: '视频',
+  4: '音频',
+  5: '压缩包',
+};
+
+// 将后端 fileSize（字节数 Long）转换为前端字符串格式 "12.4 MB"
+export const formatBytesToString = (bytes: number | string | undefined): string => {
+  if (bytes === undefined || bytes === null || bytes === '') return '';
+  const num = typeof bytes === 'string' ? Number(bytes) : bytes;
+  if (isNaN(num) || num <= 0) return '';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(num) / Math.log(k));
+  return (num / Math.pow(k, i)).toFixed(1) + ' ' + sizes[i];
+};
+
+// 将后端 fileType（Integer 0-5）映射为前端可读字符串
+export const mapFileTypeToString = (fileType: number | string | undefined): string => {
+  if (fileType === undefined || fileType === null) return '';
+  const num = typeof fileType === 'string' ? Number(fileType) : fileType;
+  return FILE_TYPE_MAP[num] || '';
+};
+
 export const filesApi = {
   // 8.1 GET /file-categories
   getCategories: async (): Promise<Category[]> => {
@@ -53,7 +81,7 @@ export const filesApi = {
   }) => {
     const formData = new FormData();
     formData.append('file', params.file);
-    
+
     // 只传API文档中支持的参数
     if (params.categoryId !== undefined && params.categoryId !== 0) {
       formData.append('categoryId', String(params.categoryId));
@@ -67,16 +95,20 @@ export const filesApi = {
     if (params.coverImage) {
       formData.append('coverImage', params.coverImage);
     }
+    // 文件简介直接通过 formData 提交（API 文档 10.3 支持 description 字段）
+    if (params.description) {
+      formData.append('description', params.description);
+    }
 
     const res = await apiClient.post('/files', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
-    
+
     // 获取上传后的文件信息
     const uploadedFile = res.data?.data || res.data;
-    
+
     // 如果返回的文件路径是相对路径，添加公共路径前缀
     if (uploadedFile?.fileUrl && !uploadedFile.fileUrl.startsWith('http')) {
       uploadedFile.fileUrl = resolveImageUrl(uploadedFile.fileUrl);
@@ -84,17 +116,16 @@ export const filesApi = {
     if (uploadedFile?.coverImage && !uploadedFile.coverImage.startsWith('http')) {
       uploadedFile.coverImage = resolveImageUrl(uploadedFile.coverImage);
     }
-    
-    // 如果有 title, description, allowDownload，上传后立即更新
-    if (uploadedFile?.id && (params.title || params.description || params.allowDownload !== undefined)) {
+
+    // 如果有 title 或 allowDownload，上传后通过 PUT /files/{id} 更新（description 已通过 formData 提交）
+    if (uploadedFile?.id && (params.title || params.allowDownload !== undefined)) {
       const updateData: any = {};
-      if (params.title) updateData.title = params.title;
-      if (params.description) updateData.description = params.description;
+      if (params.title) updateData.originalName = params.title;
       if (params.allowDownload !== undefined) updateData.allowDownload = params.allowDownload;
-      
+
       await apiClient.put(`/files/${uploadedFile.id}`, updateData);
     }
-    
+
     return uploadedFile;
   },
 
@@ -139,7 +170,7 @@ export const filesApi = {
       const result = res.data;
       const data = result?.data ?? result;
       const list = Array.isArray(data) ? data : data?.list;
-      
+
       // 处理返回的文件列表，为相对路径添加公共路径前缀
       const normalizedList = Array.isArray(list) ? list.map((file: any) => {
         if (file.fileUrl && !file.fileUrl.startsWith('http')) {
@@ -148,12 +179,22 @@ export const filesApi = {
         if (file.coverImage && !file.coverImage.startsWith('http')) {
           file.coverImage = resolveImageUrl(file.coverImage);
         }
+        const statusVal = file.visibility !== undefined ? file.visibility : (file.status ?? 0);
+        file.status = statusVal;
+        file.visibility = statusVal;
+        // 后端 FileVO 只有 originalName，映射到前端的 title 和 fileName
+        const originalName = file.originalName || file.original_name || file.fileName || file.title || '';
+        file.title = file.title || originalName;
+        file.fileName = file.fileName || originalName;
+        // 后端 fileSize 是字节数(Long)，映射为前端字符串；fileType 是整数(0-5)，映射为字符串
+        file.fileSize = file.fileSize !== undefined && typeof file.fileSize !== 'string' ? formatBytesToString(file.fileSize) : (file.fileSize || '');
+        file.fileType = file.fileType !== undefined && typeof file.fileType !== 'string' ? mapFileTypeToString(file.fileType) : (file.fileType || '');
         return file;
       }) : [];
-      
-      return { 
-        total: Array.isArray(data) ? data.length : (data?.total ?? normalizedList.length), 
-        list: normalizedList 
+
+      return {
+        total: Array.isArray(data) ? data.length : (data?.total ?? normalizedList.length),
+        list: normalizedList
       };
     } catch {
       return { total: 0, list: [] };
@@ -167,7 +208,7 @@ export const filesApi = {
       const result = res.data;
       const data = result?.data ?? result;
       const list = Array.isArray(data) ? data : data?.list;
-      
+
       // 处理返回的文件列表，为相对路径添加公共路径前缀
       const normalizedList = Array.isArray(list) ? list.map((file: any) => {
         if (file.fileUrl && !file.fileUrl.startsWith('http')) {
@@ -176,9 +217,19 @@ export const filesApi = {
         if (file.coverImage && !file.coverImage.startsWith('http')) {
           file.coverImage = resolveImageUrl(file.coverImage);
         }
+        const statusVal = file.visibility !== undefined ? file.visibility : (file.status ?? 0);
+        file.status = statusVal;
+        file.visibility = statusVal;
+        // 后端 FileVO 只有 originalName，映射到前端的 title 和 fileName
+        const originalName = file.originalName || file.original_name || file.fileName || file.title || '';
+        file.title = file.title || originalName;
+        file.fileName = file.fileName || originalName;
+        // 后端 fileSize 是字节数(Long)，映射为前端字符串；fileType 是整数(0-5)，映射为字符串
+        file.fileSize = file.fileSize !== undefined && typeof file.fileSize !== 'string' ? formatBytesToString(file.fileSize) : (file.fileSize || '');
+        file.fileType = file.fileType !== undefined && typeof file.fileType !== 'string' ? mapFileTypeToString(file.fileType) : (file.fileType || '');
         return file;
       }) : [];
-      
+
       return normalizedList;
     } catch {
       return [];
@@ -195,7 +246,7 @@ export const filesApi = {
     console.log('[Files API] getFileById raw response:', { result, data, file });
 
     const authorObj = file?.author || file?.user || file?.creator || data?.author || data?.user;
-    const isFollowing = 
+    const isFollowing =
       authorObj?.isFollowing ??
       authorObj?.is_following ??
       authorObj?.isFollowed ??
@@ -225,12 +276,25 @@ export const filesApi = {
     // 处理文件路径，为相对路径添加公共路径前缀
     const fileUrl = file?.fileUrl;
     const coverImage = file?.coverImage;
-    
+    const statusVal = file?.visibility !== undefined ? file.visibility : (file?.status ?? 0);
+    // 后端 FileVO 只有 originalName，映射到前端的 title 和 fileName
+    const originalName = file?.originalName || file?.original_name || file?.fileName || file?.title || '';
+    // 描述字段映射：后端可能返回 description / summary / fileDesc
+    const descriptionVal = file?.description ?? file?.summary ?? file?.fileDesc ?? '';
+
     return {
       ...file,
       author: normalizedAuthor,
+      status: statusVal,
+      visibility: statusVal,
       viewCount: file?.viewCount ?? file?.view_count ?? file?.views ?? 0,
       categoryName: file?.category?.name || file?.categoryName || file?.category_name,
+      title: file?.title || originalName,
+      fileName: file?.fileName || originalName,
+      description: descriptionVal,
+      // 后端 fileSize 是字节数(Long)，映射为前端字符串；fileType 是整数(0-5)，映射为字符串
+      fileSize: file?.fileSize !== undefined && typeof file?.fileSize !== 'string' ? formatBytesToString(file?.fileSize) : (file?.fileSize || ''),
+      fileType: file?.fileType !== undefined && typeof file?.fileType !== 'string' ? mapFileTypeToString(file?.fileType) : (file?.fileType || ''),
       fileUrl: fileUrl && !fileUrl.startsWith('http') ? resolveImageUrl(fileUrl) : fileUrl,
       coverImage: coverImage && !coverImage.startsWith('http') ? resolveImageUrl(coverImage) : coverImage,
     };
@@ -313,8 +377,33 @@ export const filesApi = {
   },
 
   // 9.4.1 PUT /files/{id}
+  // 后端 PUT /files/{id} 按 API 文档接受 originalName/description/categoryId/articleId
+  // 前端 title/fileName 需要映射为 originalName
   updateFile: async (id: number, data: Partial<FileItem>) => {
-    const res = await apiClient.put(`/files/${id}`, data);
+    const payload: any = { ...data };
+    // 将前端 title/fileName 映射为后端 originalName
+    const originalNameVal = (data as any).originalName;
+    if (data.title !== undefined && originalNameVal === undefined) payload.originalName = data.title;
+    if (data.fileName !== undefined && originalNameVal === undefined) payload.originalName = data.fileName;
+    // 删除后端不接受的字段
+    delete payload.title;
+    delete payload.fileName;
+    delete payload.fileSize;
+    delete payload.fileType;
+    delete payload.downloadCount;
+    delete payload.viewCount;
+    delete payload.likeCount;
+    delete payload.favoriteCount;
+    delete payload.commentCount;
+    delete payload.isLiked;
+    delete payload.isFavorited;
+    delete payload.author;
+    delete payload.category;
+    delete payload.categoryName;
+    delete payload.isHidden;
+    if (data.status !== undefined && data.visibility === undefined) payload.visibility = data.status;
+    if (data.visibility !== undefined && data.status === undefined) payload.status = data.visibility;
+    const res = await apiClient.put(`/files/${id}`, payload);
     return res.data;
   },
 
@@ -326,8 +415,13 @@ export const filesApi = {
 
   // 9.5.1 PUT /files/{id}/status
   updateFileStatus: async (id: number, status: number) => {
-    const res = await apiClient.put(`/files/${id}/status`, { status });
-    return res.data;
+    try {
+      const res = await apiClient.put(`/files/${id}/status`, { status, visibility: status });
+      return res.data;
+    } catch {
+      const res = await apiClient.put(`/files/${id}`, { status, visibility: status });
+      return res.data;
+    }
   },
 
   // 9.6 PUT /admin/files/{id}/hide
@@ -342,10 +436,25 @@ export const filesApi = {
     return res.data;
   },
 
-  // 9.7 PUT /admin/files/{id}/allow-download
+  // 9.7 PUT /files/{id} 或 /admin/files/{id}/allow-download
   toggleAllowDownload: async (id: number, allowDownload: number) => {
-    const res = await apiClient.put(`/admin/files/${id}/allow-download`, { allowDownload });
-    return res.data;
+    try {
+      const res = await apiClient.put(`/files/${id}`, { allowDownload });
+      return res.data;
+    } catch {
+      const res = await apiClient.put(`/admin/files/${id}/allow-download`, { allowDownload });
+      return res.data;
+    }
+  },
+
+  updateAllowDownload: async (id: number, allowDownload: number) => {
+    try {
+      const res = await apiClient.put(`/files/${id}`, { allowDownload });
+      return res.data;
+    } catch {
+      const res = await apiClient.put(`/admin/files/${id}/allow-download`, { allowDownload });
+      return res.data;
+    }
   },
 
   // 9.8 GET /admin/files
@@ -391,7 +500,7 @@ export const filesApi = {
       const result = res.data;
       const data = result?.data ?? result;
       const list = Array.isArray(data) ? data : data?.list;
-      
+
       // 处理返回的文件列表，为相对路径添加公共路径前缀
       const normalizedList = Array.isArray(list) ? list.map((file: any) => {
         if (file.fileUrl && !file.fileUrl.startsWith('http')) {
@@ -400,9 +509,16 @@ export const filesApi = {
         if (file.coverImage && !file.coverImage.startsWith('http')) {
           file.coverImage = resolveImageUrl(file.coverImage);
         }
+        // 后端 FileVO 只有 originalName，映射到前端的 title 和 fileName
+        const originalName = file.originalName || file.original_name || file.fileName || file.title || '';
+        file.title = file.title || originalName;
+        file.fileName = file.fileName || originalName;
+        // 后端 fileSize 是字节数(Long)，映射为前端字符串；fileType 是整数(0-5)，映射为字符串
+        file.fileSize = file.fileSize !== undefined && typeof file.fileSize !== 'string' ? formatBytesToString(file.fileSize) : (file.fileSize || '');
+        file.fileType = file.fileType !== undefined && typeof file.fileType !== 'string' ? mapFileTypeToString(file.fileType) : (file.fileType || '');
         return file;
       }) : [];
-      
+
       return normalizedList;
     } catch {
       return [];

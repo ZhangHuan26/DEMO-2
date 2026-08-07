@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, AlertTriangle, CheckCircle } from 'lucide-react';
 import { reportsApi } from '../../api/reports';
+import { showToast } from './Toast';
 
 interface ReportModalProps {
   isOpen: boolean;
@@ -31,7 +32,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
 
   const handleSubmit = async () => {
     if (!reason.trim()) {
-      alert('请填写举报原因');
+      showToast({ message: '请填写举报原因', type: 'warning' });
       return;
     }
 
@@ -49,7 +50,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
         setReason('');
       }, 2000);
     } catch (error: any) {
-      alert(error.message || '举报提交失败');
+      showToast({ message: error.message || '举报提交失败', type: 'error' });
     } finally {
       setSubmitting(false);
     }

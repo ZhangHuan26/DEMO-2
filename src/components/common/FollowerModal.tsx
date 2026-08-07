@@ -3,6 +3,7 @@ import { X, UserMinus, MessageSquare } from 'lucide-react';
 import { User } from '../../types';
 import { authApi } from '../../api/auth';
 import { useNavigate } from 'react-router-dom';
+import { showToast } from './Toast';
 
 interface FollowerModalProps {
   isOpen: boolean;
@@ -57,7 +58,7 @@ export const FollowerModal: React.FC<FollowerModalProps> = ({
       // 从列表中移除该用户
       setUsers(prev => prev.filter(item => item.id !== u.id));
     } catch {
-      alert('取消关注失败，请稍后重试');
+      showToast({ message: '取消关注失败，请稍后重试', type: 'error' });
     }
   };
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Folder, Pin, Trash2, Lock, Unlock } from 'lucide-react';
 import { FileItem } from '../../types';
 import { adminApi } from '../../api/admin';
+import { showToast } from '../../components/common/Toast';
 import { filesApi } from '../../api/files';
 
 export const AdminFilesPage: React.FC = () => {
@@ -33,7 +34,7 @@ export const AdminFilesPage: React.FC = () => {
       }
       setFiles(prev => prev.map(item => item.id === f.id ? { ...item, isHidden: item.isHidden === 1 ? 0 : 1 } : item));
     } catch {
-      alert('切换隐藏状态失败');
+      showToast({ message: '切换隐藏状态失败', type: 'error' });
     }
   };
 
@@ -43,7 +44,7 @@ export const AdminFilesPage: React.FC = () => {
       await adminApi.toggleFileDownload(f.id, newAllow);
       setFiles(prev => prev.map(item => item.id === f.id ? { ...item, allowDownload: newAllow } : item));
     } catch {
-      alert('切换下载权限失败');
+      showToast({ message: '切换下载权限失败', type: 'error' });
     }
   };
 
@@ -53,7 +54,7 @@ export const AdminFilesPage: React.FC = () => {
       await adminApi.deleteFile(f.id);
       setFiles(prev => prev.filter(item => item.id !== f.id));
     } catch {
-      alert('删除失败');
+      showToast({ message: '删除失败', type: 'error' });
     }
   };
 

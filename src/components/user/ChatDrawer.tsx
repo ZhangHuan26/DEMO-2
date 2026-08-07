@@ -5,6 +5,7 @@ import { chatApi, ChatFriend } from '../../api/chat';
 import { Conversation, Message, User } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { resolveImageUrl } from '../../config/env';
+import { showToast } from '../common/Toast';
 
 interface ChatDrawerProps {
   isOpen: boolean;
@@ -196,7 +197,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({ isOpen, onClose, targetU
     if (!inputContent.trim() || !selectedPeer || !user) return;
 
     if (selectedPeer.id === user.id) {
-      alert('不能给自己发送私信');
+      showToast({ message: '不能给自己发送私信', type: 'warning' });
       return;
     }
 
@@ -209,12 +210,12 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({ isOpen, onClose, targetU
         const optimisticMsg = chatWs.send(selectedPeer.id, content, user.id);
         setMessages((prev) => [...prev, optimisticMsg]);
       } else {
-        alert('WebSocket未连接，无法发送消息。请刷新页面重试。');
+        showToast({ message: 'WebSocket未连接，无法发送消息。请刷新页面重试。', type: 'warning' });
         setInputContent(content);
       }
     } catch (error) {
       console.error('Failed to send message:', error);
-      alert('发送消息失败，请检查网络连接。');
+      showToast({ message: '发送消息失败，请检查网络连接。', type: 'error' });
       setInputContent(content);
     }
   };

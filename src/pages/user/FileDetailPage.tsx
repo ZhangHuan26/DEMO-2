@@ -16,6 +16,7 @@ import { resolveImageUrl } from '../../config/env';
 import { BehanceDetailShell } from '../../components/common/BehanceDetailShell';
 import { LikeFavoriteAvatarWall } from '../../components/common/LikeFavoriteAvatarWall';
 import { formatPublishTime } from '../../utils/dateUtils';
+import { showToast } from '../../components/common/Toast';
 
 export const FileDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -81,13 +82,16 @@ export const FileDetailPage: React.FC = () => {
   const canDownload = file.allowDownload === 1 || isOwner || user?.role === 1;
 
   const handleDownload = async () => {
-    if (!canDownload) return alert('该资源已被管理员或作者关闭下载权限');
+    if (!canDownload) {
+      showToast({ message: '该资源已被管理员或作者关闭下载权限', type: 'warning' });
+      return;
+    }
     setDownloading(true);
     try {
       await filesApi.downloadFile(file.id, file.fileName || file.title);
       setFile(prev => prev ? { ...prev, downloadCount: prev.downloadCount + 1 } : null);
     } catch (err: any) {
-      alert(err.message || '下载资源失败');
+      showToast({ message: err.message || '下载资源失败', type: 'error' });
     } finally {
       setDownloading(false);
     }
@@ -136,13 +140,13 @@ export const FileDetailPage: React.FC = () => {
       }
       setNewCommentText('');
     } catch {
-      alert('发表评论失败');
+      showToast({ message: '发表评论失败', type: 'error' });
     }
   };
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
-    alert('资源链接已成功复制到剪贴板！');
+    showToast({ message: '资源链接已成功复制到剪贴板！', type: 'success' });
   };
 
   const handleToggleFollow = async () => {
@@ -164,7 +168,7 @@ export const FileDetailPage: React.FC = () => {
       setFile(prev => prev && prev.author ? { ...prev, author: { ...prev.author, isFollowing: isCurrentlyFollowing } } : prev);
       const resCode = err?.response?.data?.code || err?.code;
       if (resCode !== 40900 && !err?.message?.includes('已关注')) {
-        alert(err?.response?.data?.message || err?.message || '操作失败，请重试');
+        showToast({ message: err?.response?.data?.message || err?.message || '操作失败，请重试', type: 'error' });
       }
     }
   };

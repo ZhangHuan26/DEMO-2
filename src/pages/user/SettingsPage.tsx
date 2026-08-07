@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { User, Lock, Save, Check, Camera, Upload, Sparkles } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { showToast } from '../../components/common/Toast';
 import { useNavigate } from 'react-router-dom';
 import { authApi } from '../../api/auth';
 import { adminApi } from '../../api/admin';
@@ -107,7 +108,7 @@ export const SettingsPage: React.FC = () => {
       setSavedMsg(true);
       setTimeout(() => setSavedMsg(false), 2500);
     } catch {
-      alert('更新资料设置失败。');
+      showToast({ message: '更新资料设置失败。', type: 'error' });
     } finally {
       setSavingProfile(false);
     }
@@ -119,11 +120,11 @@ export const SettingsPage: React.FC = () => {
     setSavingPassword(true);
     try {
       await authApi.updatePassword({ oldPassword, newPassword });
-      alert('密码更新成功！');
+      showToast({ message: '密码更新成功！', type: 'success' });
       setOldPassword('');
       setNewPassword('');
     } catch {
-      alert('密码更新失败。');
+      showToast({ message: '密码更新失败。', type: 'error' });
     } finally {
       setSavingPassword(false);
     }

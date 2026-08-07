@@ -111,9 +111,12 @@ export const videosApi = {
 
     console.log('[Videos API] Normalized author:', normalizedAuthor);
 
+    const statusVal = video?.visibility !== undefined ? video.visibility : (video?.status ?? 0);
     return {
       ...video,
       author: normalizedAuthor,
+      status: statusVal,
+      visibility: statusVal,
       viewCount: video?.viewCount ?? video?.view_count ?? video?.views ?? video?.playCount ?? video?.plays ?? 0,
       categoryName: video?.category?.name || video?.categoryName || video?.category_name,
     };
@@ -129,6 +132,7 @@ export const videosApi = {
     fileSize?: number;
     categoryId?: number;
     status?: number;
+    visibility?: number;
     allowDownload?: number;
   }) => {
     // 解析时长：如果为字符串 (如 "04:35" 或 "01:10:20")，转换为秒整型 (API 文档 int)
@@ -148,6 +152,7 @@ export const videosApi = {
       }
     }
 
+    const statusVal = data.visibility !== undefined ? data.visibility : (data.status !== undefined ? Number(data.status) : 0);
     const payload: Record<string, any> = {
       title: data.title,
       description: data.description ?? '',
@@ -155,7 +160,8 @@ export const videosApi = {
       coverImage: data.coverImage ?? '',
       duration: durationSec !== undefined ? durationSec : (data.duration ?? 0),
       categoryId: data.categoryId ? Number(data.categoryId) : undefined,
-      status: data.status !== undefined ? Number(data.status) : 0,
+      status: statusVal,
+      visibility: statusVal,
     };
 
     if (data.fileSize !== undefined) payload.fileSize = Number(data.fileSize);
@@ -195,7 +201,10 @@ export const videosApi = {
 
   // 13.4 PUT /videos/{id}
   updateVideo: async (id: number, data: Partial<Video>) => {
-    const res = await apiClient.put(`/videos/${id}`, data);
+    const payload: any = { ...data };
+    if (data.status !== undefined && data.visibility === undefined) payload.visibility = data.status;
+    if (data.visibility !== undefined && data.status === undefined) payload.status = data.visibility;
+    const res = await apiClient.put(`/videos/${id}`, payload);
     return res.data;
   },
 
@@ -207,8 +216,13 @@ export const videosApi = {
 
   // 13.5.1 PUT /videos/{id}/status
   updateVideoStatus: async (id: number, status: number) => {
-    const res = await apiClient.put(`/videos/${id}/status`, { status });
-    return res.data;
+    try {
+      const res = await apiClient.put(`/videos/${id}/status`, { status, visibility: status });
+      return res.data;
+    } catch {
+      const res = await apiClient.put(`/videos/${id}`, { status, visibility: status });
+      return res.data;
+    }
   },
 
   // 13.6 GET /admin/videos

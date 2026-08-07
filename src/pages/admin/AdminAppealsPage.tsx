@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { showToast } from '../../components/common/Toast';
 import { MessageSquare, CheckCircle, XCircle, Send } from 'lucide-react';
 import { Appeal } from '../../types';
 import { adminApi } from '../../api/admin';
@@ -30,9 +31,9 @@ export const AdminAppealsPage: React.FC = () => {
     try {
       await adminApi.handleAppeal(appealId, { status, handleResult: reply });
       setAppeals(prev => prev.map(a => a.id === appealId ? { ...a, status, handleResult: reply } : a));
-      alert(status === 1 ? '申诉通过！已为该用户解除限制/恢复作品。' : '申诉已被驳回。');
+      showToast({ message: status === 1 ? '申诉通过！已为该用户解除限制/恢复作品。' : '申诉已被驳回。', type: status === 1 ? 'success' : 'info' });
     } catch {
-      alert('操作失败。');
+      showToast({ message: '操作失败。', type: 'error' });
     }
   };
 

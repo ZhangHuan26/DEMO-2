@@ -3,6 +3,7 @@ import { Folder, Download, Trash2, Lock, Unlock } from 'lucide-react';
 import { FileItem } from '../../types';
 import { filesApi } from '../../api/files';
 import { useAuth } from '../../context/AuthContext';
+import { showToast } from '../../components/common/Toast';
 import { useNavigate } from 'react-router-dom';
 import { FileCard } from '../../components/user/FileCard';
 
@@ -52,7 +53,7 @@ export const MyFilesPage: React.FC = () => {
       await filesApi.deleteFile(id);
       setFiles(prev => prev.filter(f => f.id !== id));
     } catch {
-      alert('删除失败');
+      showToast({ message: '删除失败', type: 'error' });
     }
   };
 

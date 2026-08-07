@@ -400,9 +400,10 @@
 
 - **接口**：`GET /users/me/summary`
 - **鉴权**：登录
-- **功能**：返回当录用户的主页统计信息，包括基础资料、内容统计（文章/视频/文件数）、互动统计（收藏/评论/收到的点赞总数）、社交统计（粉丝数/关注数）。方便前端"个人中心"一屏展示。
-  前登
+- **功能**：返回当前登录用户的主页统计信息，包括基础资料、内容统计（文章/视频/文件数）、互动统计（收藏/评论/收到的点赞总数）、社交统计（粉丝数/关注数）。方便前端"个人中心"一屏展示。
+
 **传参**：无
+
 
 **返回字段（data）**：
 
@@ -433,6 +434,7 @@
 | likeCount | Long | 我的作品收到的点赞总数（文章+视频+文件） |
 | followerCount | Long | 粉丝数 |
 | followingCount | Long | 关注数 |
+
 
 # 博客系统接口功能详解（二）
 
@@ -673,6 +675,7 @@
 | viewCount | Integer | 浏览量 |
 | likeCount | Integer | 点赞数 |
 | favoriteCount | Integer | 收藏数 |
+| commentCount | Integer | 评论数 |
 | status | Integer | 可见状态：0-公共 1-私人 |
 | isHidden | Integer | 是否隐藏：0-正常 1-已隐藏 |
 | author | UserBriefVO | 作者简要信息（id/nickName/avatar/signature/isFollowing） |
@@ -682,6 +685,7 @@
 | updatedAt | LocalDateTime | 更新时间 |
 | isLiked | Boolean | 当前用户是否已点赞 |
 | isFavorited | Boolean | 当前用户是否已收藏 |
+
 
 **author（UserBriefVO）字段**：
 
@@ -890,15 +894,22 @@
 | fileType | Integer | 文件大类：0-其他 1-图片 2-文档 3-视频 4-音频 5-压缩包，仅文件有 |
 | fileExt | String | 文件扩展名，仅文件有 |
 | filePath | String | 文件访问路径，仅文件有 |
+| status | Integer | 作品状态：0-正常展示 1-已被管理员隐藏 |
+| isHidden | Integer | 是否被隐藏：0-正常 1-已被管理员隐藏（与 status 一致，语义更清晰） |
+| visibility | Integer | 可见范围：0-公共 1-私人（仅自己可见） |
+| allowDownload | Integer | 是否允许下载：0-禁止 1-允许，仅文件有 |
 | createdAt | LocalDateTime | 创建时间 |
+
+
 
 ---
 
 ### 7.2 用户作品列表
 
 - **接口**：`GET /content/user/{userId}`
-- **鉴权**：无需登录（登录态下作者本人可看到自己的私人作品）
-- **功能**：返回某个用户的全部作品（文章/视频/文件聚合），支持按类型筛选、排序、分页。**作者本人**（登录且 `userId` 等于自己）可以看到自己的公共+私人作品；**其他人**只能看到该作者的公共且未隐藏的作品；**已冻结作者**的作品对他人不可见。
+- **鉴权**：无需登录（登录态下作者本人可看到自己的全部作品，包括私人与被隐藏的）
+- **功能**：返回某个用户的全部作品（文章/视频/文件聚合），支持按类型筛选、排序、分页。**作者本人**（登录且 `userId` 等于自己）可以看到自己的全部作品（公共+私人+被隐藏）；**其他人**只能看到该作者的公共且未隐藏的作品；**已冻结作者**的作品对他人不可见。
+
 
 **传参（Path + Query）**：
 
@@ -1302,14 +1313,17 @@
 | articleId | Long | 关联文章id |
 | categoryId | Long | 文件分类id |
 | originalName | String | 原始文件名 |
+| description | String | 文件简介（可为 null） |
 | coverImage | String | 封面图URL（通过 POST /uploads/image 获取后写入，可为 null） |
 | filePath | String | 文件存储路径或访问URL |
+
 | fileExt | String | 文件扩展名 |
 | mimeType | String | 文件MIME类型 |
 | fileType | Integer | 文件大类：0-其他 1-图片 2-文档 3-视频 4-音频 5-压缩包 |
 | fileSize | Long | 文件大小（字节） |
 | likeCount | Integer | 点赞数 |
 | favoriteCount | Integer | 收藏数 |
+| commentCount | Integer | 评论数 |
 | status | Integer | 可见状态：0-公共 1-私人 |
 | isHidden | Integer | 是否隐藏：0-正常 1-已隐藏 |
 | allowDownload | Integer | 是否允许下载：0-禁止 1-允许 |
@@ -1318,6 +1332,10 @@
 | createdAt | LocalDateTime | 创建时间 |
 | updatedAt | LocalDateTime | 更新时间 |
 | author | UserBriefVO | 上传者简要信息（id/nickName/avatar/isFollowing） |
+| category | CategoryBriefVO | 文件分类简要信息（id/name），仅详情接口返回 |
+| isLiked | Boolean | 当前登录用户是否已点赞该文件（未登录为 false），仅详情接口返回 |
+| isFavorited | Boolean | 当前登录用户是否已收藏该文件（未登录为 false），仅详情接口返回 |
+
 
 
 
@@ -1327,7 +1345,7 @@
 
 - **接口**：`GET /files/{id}`
 - **鉴权**：无需登录（私人和被隐藏的文件只有上传者本人或管理员能看）
-- **功能**：返回文件的完整信息，包括上传者、下载次数等。
+- **功能**：返回文件的完整信息，包括上传者、下载次数等。与文章详情 `GET /articles/{id}`、视频详情 `GET /videos/{id}` 结构一致，额外返回当前登录用户是否已点赞/收藏，以及文件分类简要信息。
 
 **传参（Path）**：
 
@@ -1338,6 +1356,11 @@
 **返回字段（data）**：`FileVO` 对象（字段见 10.1）
 
 > `author.isFollowing`：当前登录用户是否已关注该上传者。未登录或未关注时为 `false`，仅登录态下有意义。
+>
+> `isLiked` / `isFavorited`：当前登录用户是否已点赞/收藏该文件。未登录时为 `false`，仅登录态下有意义。
+>
+> `category`：文件分类简要信息（id/name），未设置分类时为 `null`。
+
 
 
 > **前端交互要求（下载按钮）**：详情页根据返回字段 `allowDownload` 控制下载按钮状态——
@@ -1369,6 +1392,8 @@
 | categoryId | Long | 否 | 文件分类id |
 | status | int | 否 | 可见状态：0-公共 1-私人，默认公共 |
 | coverImage | string | 否 | 封面图URL（通过 POST /uploads/image 获取后传入，可为空） |
+| description | string | 否 | 文件简介（可为空） |
+
 
 **请求示例（curl）**：
 
@@ -1378,7 +1403,9 @@ curl -X POST http://192.168.100.115:8080/files \
   -F "file=@/path/to/your/file.pdf" \
   -F "categoryId=2" \
   -F "status=0" \
-  -F "coverImage=https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?q=80&w=800&auto=format&fit=crop"
+  -F "coverImage=https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?q=80&w=800&auto=format&fit=crop" \
+  -F "description=这是一份项目需求文档"
+
 ```
 
 **常见错误**：
@@ -1406,8 +1433,10 @@ curl -X POST http://192.168.100.115:8080/files \
 | --- | --- | --- | --- |
 | id | Long | 是 | 要更新的文件id |
 | originalName | string | 否 | 原始文件名 |
+| description | string | 否 | 文件简介 |
 | categoryId | Long | 否 | 文件分类id |
 | articleId | Long | 否 | 关联文章id |
+
 
 **返回字段（data）**：更新后的 `FileVO` 对象
 
@@ -1961,6 +1990,7 @@ curl -X POST http://192.168.100.115:8080/files \
 | viewCount | Integer | 浏览量 |
 | likeCount | Integer | 点赞数 |
 | favoriteCount | Integer | 收藏数 |
+| commentCount | Integer | 评论数 |
 | status | Integer | 可见状态：0-公共 1-私人 |
 | isHidden | Integer | 是否隐藏：0-正常 1-已隐藏 |
 | allowDownload | Integer | 是否允许下载：0-禁止 1-允许 |
@@ -1970,6 +2000,7 @@ curl -X POST http://192.168.100.115:8080/files \
 | updatedAt | LocalDateTime | 更新时间 |
 | isLiked | Boolean | 当前用户是否已点赞 |
 | isFavorited | Boolean | 当前用户是否已收藏 |
+
 
 > `author.isFollowing`：当前登录用户是否已关注该作者。未登录或未关注时为 `false`，仅登录态下有意义。
 
@@ -3266,7 +3297,6 @@ Authorization: Bearer {token}
 | --- | --- |
 | 视频发布 | 作为 `POST /videos` 的 videoUrl 参数 |
 | 视频更新 | 作为 `PUT /videos/{id}` 的 videoUrl 参数 |
-
 
 
 # 博客系统接口功能详解（五）

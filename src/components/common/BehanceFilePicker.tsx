@@ -1,45 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { Upload, Link as LinkIcon, FileText, Check, Sparkles, AlertCircle, FileArchive, FolderArchive } from 'lucide-react';
+import { Upload, Link as LinkIcon, Check, AlertCircle, FileArchive, FolderArchive } from 'lucide-react';
 import { resolveImageUrl } from '../../config/env';
-
-export interface PresetFile {
-  title: string;
-  url: string;
-  fileName: string;
-  fileSize: string;
-  fileType: string;
-}
-
-export const PRESET_SAMPLE_FILES: PresetFile[] = [
-  {
-    title: '3D 拟态玻璃 UI 组件库 (Figma)',
-    url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    fileName: 'Glassmorphism_UI_Kit_v2.fig',
-    fileSize: '45.8 MB',
-    fileType: 'fig',
-  },
-  {
-    title: 'iOS 18 动效图标与音效源文件包',
-    url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    fileName: 'iOS18_Motion_Assets_Pack.zip',
-    fileSize: '128.5 MB',
-    fileType: 'zip',
-  },
-  {
-    title: '赛博朋克风矢量插画与底纹库',
-    url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    fileName: 'Cyberpunk_Vector_Pattern.ai',
-    fileSize: '82.3 MB',
-    fileType: 'ai',
-  },
-  {
-    title: '高精 C4D 3D 抽象流体噪波材质',
-    url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    fileName: 'C4D_Fluid_Noise_Materials.c4d',
-    fileSize: '210.0 MB',
-    fileType: 'c4d',
-  },
-];
 
 interface BehanceFilePickerProps {
   fileUrl: string;
@@ -68,7 +29,7 @@ export const BehanceFilePicker: React.FC<BehanceFilePickerProps> = ({
   onFileSelected,
   label = '资源文件上传 / 设置',
 }) => {
-  const [activeTab, setActiveTab] = useState<'upload' | 'url' | 'presets'>('upload');
+  const [activeTab, setActiveTab] = useState<'upload' | 'url'>('upload');
   const [urlInput, setUrlInput] = useState(fileUrl);
   const [uploadError, setUploadError] = useState('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -120,15 +81,6 @@ export const BehanceFilePicker: React.FC<BehanceFilePickerProps> = ({
     }
   };
 
-  const handleSelectPreset = (preset: PresetFile) => {
-    onFileSelected(null);
-    onChangeUrl(preset.url);
-    onChangeFileName(preset.fileName);
-    onChangeFileSize(preset.fileSize);
-    onChangeFileType(preset.fileType);
-    setUrlInput(preset.url);
-  };
-
   const currentDisplayUrl = selectedFile ? selectedFile.name : (fileUrl ? resolveImageUrl(fileUrl) : '');
 
   return (
@@ -166,18 +118,6 @@ export const BehanceFilePicker: React.FC<BehanceFilePickerProps> = ({
           网络资源链接
         </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('presets')}
-          className={`flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-            activeTab === 'presets'
-              ? 'bg-[#0057FF] text-white font-semibold shadow-md'
-              : 'text-neutral-400 hover:text-white hover:bg-neutral-800/50'
-          }`}
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          示范素材预设
-        </button>
       </div>
 
       {/* Tab 1: Upload Local File */}
@@ -266,36 +206,6 @@ export const BehanceFilePicker: React.FC<BehanceFilePickerProps> = ({
         </div>
       )}
 
-      {/* Tab 3: Presets */}
-      {activeTab === 'presets' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {PRESET_SAMPLE_FILES.map((preset, idx) => {
-            const isSelected = fileUrl === preset.url;
-            return (
-              <div
-                key={idx}
-                onClick={() => handleSelectPreset(preset)}
-                className={`p-3 rounded-xl border text-left cursor-pointer transition-all flex items-start gap-2.5 ${
-                  isSelected
-                    ? 'bg-[#0057FF]/15 border-[#0057FF] text-white'
-                    : 'bg-neutral-900 border-neutral-800 text-neutral-300 hover:border-neutral-700 hover:bg-neutral-800/50'
-                }`}
-              >
-                <div className="w-7 h-7 rounded-lg bg-neutral-800 text-neutral-300 flex items-center justify-center shrink-0 mt-0.5">
-                  <FileText className="w-3.5 h-3.5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold truncate text-white">{preset.title}</p>
-                  <p className="text-[10px] text-neutral-400 truncate mt-0.5">
-                    {preset.fileName} ({preset.fileSize})
-                  </p>
-                </div>
-                {isSelected && <Check className="w-4 h-4 text-[#0057FF] shrink-0" />}
-              </div>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 };

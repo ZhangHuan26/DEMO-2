@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, Search, ShieldAlert, Lock, Unlock, History, ShieldCheck, UserX, X } from 'lucide-react';
 import { User, FreezeLog } from '../../types';
 import { adminApi } from '../../api/admin';
+import { showToast } from '../../components/common/Toast';
 import { FreezeModal } from '../../components/common/FreezeModal';
 import { resolveImageUrl } from '../../config/env';
 
@@ -41,7 +42,7 @@ export const AdminUsersPage: React.FC = () => {
       await adminApi.unfreezeUser(user.id);
       setUsers(prev => prev.map(u => u.id === user.id ? { ...u, status: 0 } : u));
     } catch {
-      alert('解封操作失败');
+      showToast({ message: '解封操作失败', type: 'error' });
     }
   };
 
@@ -52,14 +53,14 @@ export const AdminUsersPage: React.FC = () => {
         await adminApi.revokeAdmin(user.id);
         setUsers(prev => prev.map(u => u.id === user.id ? { ...u, role: 0 } : u));
       } catch {
-        alert('操作失败');
+        showToast({ message: '操作失败', type: 'error' });
       }
     } else {
       try {
         await adminApi.grantAdmin({ userId: user.id });
         setUsers(prev => prev.map(u => u.id === user.id ? { ...u, role: 1 } : u));
       } catch {
-        alert('操作失败');
+        showToast({ message: '操作失败', type: 'error' });
       }
     }
   };

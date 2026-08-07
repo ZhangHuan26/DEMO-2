@@ -49,7 +49,7 @@ export const FilesPage: React.FC = () => {
           f.title.toLowerCase().includes(q) ||
           (f.description && f.description.toLowerCase().includes(q)) ||
           (f.fileName && f.fileName.toLowerCase().includes(q)) ||
-          (f.fileType && f.fileType.toLowerCase().includes(q)) ||
+          (f.fileType && String(f.fileType).toLowerCase().includes(q)) ||
           (f.author?.nickName && f.author.nickName.toLowerCase().includes(q))
       );
     }

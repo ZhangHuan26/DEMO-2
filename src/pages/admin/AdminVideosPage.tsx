@@ -3,6 +3,7 @@ import { Video as VideoIcon, Pin, Trash2 } from 'lucide-react';
 import { Video } from '../../types';
 import { adminApi } from '../../api/admin';
 import { videosApi } from '../../api/videos';
+import { showToast } from '../../components/common/Toast';
 
 export const AdminVideosPage: React.FC = () => {
   const [videos, setVideos] = useState<Video[]>([]);
@@ -33,7 +34,7 @@ export const AdminVideosPage: React.FC = () => {
       }
       setVideos(prev => prev.map(item => item.id === v.id ? { ...item, isHidden: item.isHidden === 1 ? 0 : 1 } : item));
     } catch {
-      alert('切换隐藏状态失败');
+      showToast({ message: '切换隐藏状态失败', type: 'error' });
     }
   };
 
@@ -43,7 +44,7 @@ export const AdminVideosPage: React.FC = () => {
       await adminApi.toggleVideoDownload(v.id, newAllow);
       setVideos(prev => prev.map(item => item.id === v.id ? { ...item, allowDownload: newAllow } : item));
     } catch {
-      alert('切换下载权限失败');
+      showToast({ message: '切换下载权限失败', type: 'error' });
     }
   };
 
@@ -52,7 +53,7 @@ export const AdminVideosPage: React.FC = () => {
       await adminApi.deleteVideo(v.id);
       setVideos(prev => prev.filter(item => item.id !== v.id));
     } catch {
-      alert('删除失败');
+      showToast({ message: '删除失败', type: 'error' });
     }
   };
 

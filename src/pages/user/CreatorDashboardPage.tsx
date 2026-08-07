@@ -8,17 +8,25 @@ import {
   BarChart, 
   FileText, 
   Video, 
-  Folder,
-  MessageCircle,
   Award,
   Zap,
   Target,
-  ArrowUp,
-  ArrowDown
+  ArrowUpRight,
+  Sparkles,
+  ShieldCheck,
+  RefreshCw,
+  Layers,
+  UserCheck,
+  FolderArchive,
+  Plus,
+  ArrowLeft,
+  ChevronRight
 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { creatorApi, CreatorStatsOverview, FollowerGrowth, ContentTrend } from '../../api/creator';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { resolveImageUrl } from '../../config/env';
+import { CreateWorkModal } from '../../components/common/CreateWorkModal';
 
 export const CreatorDashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -28,31 +36,32 @@ export const CreatorDashboardPage: React.FC = () => {
   const [followerTrend, setFollowerTrend] = useState<FollowerGrowth[]>([]);
   const [contentTrend, setContentTrend] = useState<ContentTrend[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  const loadStats = async () => {
+    setLoading(true);
+    try {
+      const [overviewData, followerData, contentData] = await Promise.all([
+        creatorApi.getOverview(),
+        creatorApi.getFollowerTrend('30d'),
+        creatorApi.getContentTrend()
+      ]);
+
+      setOverview(overviewData);
+      setFollowerTrend(followerData);
+      setContentTrend(contentData);
+    } catch (error) {
+      console.error('Failed to load creator stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!user) {
       navigate('/login');
       return;
     }
-
-    const loadStats = async () => {
-      setLoading(true);
-      try {
-        const [overviewData, followerData, contentData] = await Promise.all([
-          creatorApi.getOverview(),
-          creatorApi.getFollowerTrend('30d'),
-          creatorApi.getContentTrend()
-        ]);
-
-        setOverview(overviewData);
-        setFollowerTrend(followerData);
-        setContentTrend(contentData);
-      } catch (error) {
-        console.error('Failed to load creator stats:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
 
     loadStats();
   }, [user, navigate]);
@@ -61,12 +70,22 @@ export const CreatorDashboardPage: React.FC = () => {
     return null;
   }
 
-  if (loading) {
+  if (loading && !overview) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-blue-50/30 to-neutral-50 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 border-4 border-[#0057FF] border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-sm text-neutral-600 font-semibold">加载数据中心...</p>
+      <div className="relative min-h-screen w-full flex items-center justify-center bg-neutral-900 text-white font-sans selection:bg-[#0057FF] selection:text-white overflow-hidden">
+        {/* Background Image with Dark Vignette */}
+        <div 
+          className="fixed inset-0 bg-cover bg-center bg-no-repeat scale-105 pointer-events-none"
+          style={{
+            backgroundImage: `url('https://images.unsplash.com/photo-1518837695005-2083093ee35b?q=80&w=2000&auto=format&fit=crop')`
+          }}
+        >
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-[3px]" />
+        </div>
+
+        <div className="relative z-10 text-center space-y-4 bg-white rounded-2xl shadow-2xl p-8 border border-neutral-100 max-w-sm w-full mx-4 text-neutral-900">
+          <div className="w-10 h-10 border-3 border-black border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-xs font-mono text-neutral-600 uppercase tracking-widest font-semibold">正在载入创作者中心...</p>
         </div>
       </div>
     );
@@ -74,10 +93,25 @@ export const CreatorDashboardPage: React.FC = () => {
 
   if (!overview) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-blue-50/30 to-neutral-50 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <BarChart className="w-16 h-16 text-neutral-300 mx-auto" />
-          <p className="text-sm text-neutral-600">无法加载统计数据</p>
+      <div className="relative min-h-screen w-full flex items-center justify-center bg-neutral-900 text-white font-sans selection:bg-[#0057FF] selection:text-white overflow-hidden">
+        <div 
+          className="fixed inset-0 bg-cover bg-center bg-no-repeat scale-105 pointer-events-none"
+          style={{
+            backgroundImage: `url('https://images.unsplash.com/photo-1518837695005-2083093ee35b?q=80&w=2000&auto=format&fit=crop')`
+          }}
+        >
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-[3px]" />
+        </div>
+
+        <div className="relative z-10 text-center space-y-4 bg-white rounded-2xl shadow-2xl p-8 border border-neutral-100 max-w-sm w-full mx-4 text-neutral-900">
+          <BarChart className="w-12 h-12 text-neutral-400 mx-auto" />
+          <p className="text-sm text-neutral-700 font-bold">无法获取创作者数据，请稍后重试</p>
+          <button 
+            onClick={() => loadStats()}
+            className="w-full py-3 bg-black hover:bg-neutral-800 text-white rounded-full text-xs font-bold transition-all shadow-md cursor-pointer"
+          >
+            重试加载
+          </button>
         </div>
       </div>
     );
@@ -85,161 +119,279 @@ export const CreatorDashboardPage: React.FC = () => {
 
   const maxFollowers = Math.max(...followerTrend.map(f => f.newFollowers), 1);
 
-  // 核心数据卡片配置
+  // 核心数据卡片配置 - 玻璃UI高质感风格
   const coreStats = [
     { 
-      label: '总浏览量', 
-      value: overview.totalViews,
+      label: '累计作品浏览', 
+      value: overview.totalViews, 
       icon: Eye, 
-      color: 'from-blue-500 to-blue-600',
-      bgColor: 'from-blue-50 to-blue-100',
-      textColor: 'text-blue-600',
-      iconBg: 'bg-blue-500'
+      accentColor: 'text-blue-400',
+      bgColor: 'bg-blue-500/20 border border-blue-500/30',
+      badge: '+12.4% 近7日',
     },
     { 
-      label: '总获赞数', 
+      label: '收获点赞支持', 
       value: overview.totalLikes,
       icon: ThumbsUp, 
-      color: 'from-rose-500 to-rose-600',
-      bgColor: 'from-rose-50 to-rose-100',
-      textColor: 'text-rose-600',
-      iconBg: 'bg-rose-500'
+      accentColor: 'text-rose-400',
+      bgColor: 'bg-rose-500/20 border border-rose-500/30',
+      badge: '保持高互动',
     },
     { 
-      label: '总收藏数', 
+      label: '作品被收藏数', 
       value: overview.totalFavorites,
       icon: Bookmark, 
-      color: 'from-amber-500 to-amber-600',
-      bgColor: 'from-amber-50 to-amber-100',
-      textColor: 'text-amber-600',
-      iconBg: 'bg-amber-500'
+      accentColor: 'text-amber-400',
+      bgColor: 'bg-amber-500/20 border border-amber-500/30',
+      badge: '价值沉淀',
     },
     { 
-      label: '粉丝总数', 
+      label: '关注粉丝总量', 
       value: overview.totalFollowers,
       icon: Users, 
-      color: 'from-emerald-500 to-emerald-600',
-      bgColor: 'from-emerald-50 to-emerald-100',
-      textColor: 'text-emerald-600',
-      iconBg: 'bg-emerald-500'
+      accentColor: 'text-emerald-400',
+      bgColor: 'bg-emerald-500/20 border border-emerald-500/30',
+      badge: '+8 增量',
     },
   ];
 
-  // 作品统计配置
+  // 作品分类统计配置
   const worksStats = [
-    { label: '图文作品', value: overview.totalArticles, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-100' },
-    { label: '视频作品', value: overview.totalVideos, icon: Video, color: 'text-rose-600', bg: 'bg-rose-100' },
-    { label: '设计资源', value: overview.totalFiles, icon: Folder, color: 'text-amber-600', bg: 'bg-amber-100' },
-    { label: '作品总数', value: overview.totalWorks, icon: Award, color: 'text-purple-600', bg: 'bg-purple-100' },
+    { label: '图文专栏', value: overview.totalArticles, icon: FileText, color: 'text-blue-400', bg: 'bg-blue-500/20 border border-blue-500/30' },
+    { label: '视频案例', value: overview.totalVideos, icon: Video, color: 'text-purple-400', bg: 'bg-purple-500/20 border border-purple-500/30' },
+    { label: '设计资源', value: overview.totalFiles, icon: FolderArchive, color: 'text-emerald-400', bg: 'bg-emerald-500/20 border border-emerald-500/30' },
+    { label: '作品总数', value: overview.totalArticles + overview.totalVideos + overview.totalFiles, icon: Award, color: 'text-amber-300', bg: 'bg-amber-500/20 border border-amber-500/30' },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-blue-50/20 to-neutral-50">
-      <div className="max-w-7xl mx-auto px-6 py-10 space-y-8">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-black text-neutral-900 mb-2 flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#0057FF] to-blue-600 flex items-center justify-center shadow-lg shadow-[#0057FF]/30">
-                <BarChart className="w-7 h-7 text-white" />
+    <div className="relative min-h-screen w-full bg-neutral-950 text-white font-sans selection:bg-[#0057FF] selection:text-white pb-20 overflow-x-hidden">
+      {/* Background Image with Ambient Glow & Vignette */}
+      <div 
+        className="fixed inset-0 bg-cover bg-center bg-no-repeat transition-all duration-700 scale-105 pointer-events-none z-0"
+        style={{
+          backgroundImage: `url('https://images.unsplash.com/photo-1518837695005-2083093ee35b?q=80&w=2000&auto=format&fit=crop')`
+        }}
+      >
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-[3px]" />
+      </div>
+
+      {/* Main Container */}
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8">
+        
+        {/* Top Header Bar & Branding (Glass UI) */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-black/40 backdrop-blur-2xl border border-white/15 p-4 sm:px-6 sm:py-4 rounded-2xl text-white shadow-2xl">
+          <div className="flex items-center gap-3">
+            <Link to="/" className="p-2 hover:bg-white/10 rounded-xl transition-colors text-white/80 hover:text-white" title="返回首页">
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <div className="flex items-center gap-2.5">
+              <span className="bg-white text-black font-extrabold px-2 py-0.5 text-xs rounded shadow-sm">LF</span>
+              <div>
+                <h1 className="text-lg font-bold text-white tracking-tight leading-none flex items-center gap-2">
+                  LeapLunar04 创作者中心
+                </h1>
+                <p className="text-[11px] text-white/60 font-mono mt-0.5">CREATOR DASHBOARD & ANALYTICS</p>
               </div>
-              创作者数据中心
-            </h1>
-            <p className="text-sm text-neutral-600">实时查看您的作品表现和影响力数据</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+            <button
+              onClick={() => loadStats()}
+              disabled={loading}
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-full text-xs font-semibold backdrop-blur-md border border-white/15 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+              title="刷新所有统计数据"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-blue-400' : ''}`} />
+              <span>刷新数据</span>
+            </button>
+
+            <button
+              onClick={() => navigate('/me/works')}
+              className="px-4.5 py-2 bg-white/10 hover:bg-white/20 text-white rounded-full text-xs font-semibold backdrop-blur-md border border-white/15 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>作品管理</span>
+            </button>
+
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="px-5 py-2 bg-white hover:bg-neutral-100 text-neutral-900 rounded-full text-xs font-extrabold transition-all shadow-lg active:scale-95 flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="w-4 h-4 text-black" />
+              <span>发布新作品</span>
+            </button>
           </div>
         </div>
 
-        {/* 核心数据卡片 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Creator Hero Card - Frosted Glass Panel */}
+        <div className="bg-black/50 backdrop-blur-2xl rounded-2xl sm:rounded-3xl shadow-2xl p-6 sm:p-10 border border-white/15 relative overflow-hidden">
+          {/* Ambient Glows */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            
+            {/* Left: User Identity */}
+            <div className="flex items-center gap-5 sm:gap-6">
+              <div className="relative group">
+                <img
+                  src={resolveImageUrl(user.avatar) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'}
+                  alt={user.nickName || user.username}
+                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover ring-2 ring-white/20 shadow-2xl bg-neutral-900"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop';
+                  }}
+                />
+                <div className="absolute -bottom-1 -right-1 p-1 bg-[#0057FF] text-white rounded-lg shadow-md ring-2 ring-black">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                    {user.nickName || user.username || '创作者'}
+                  </h2>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-blue-500/20 text-blue-300 border border-blue-500/30 backdrop-blur-md">
+                    <UserCheck className="w-3 h-3 text-blue-400" /> PRO CREATOR
+                  </span>
+                </div>
+
+                <p className="text-xs sm:text-sm text-neutral-300 max-w-lg line-clamp-1">
+                  {user.signature || '欢迎来到创作工坊 · 实时作品表现与数据监控中心'}
+                </p>
+
+                <div className="flex items-center gap-3 text-xs text-neutral-400 font-mono pt-1">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>数据同步正常</span>
+                  </span>
+                  <span>•</span>
+                  <span>创作等级 Lv.4</span>
+                  <span>•</span>
+                  <span>UID: #{user.id}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Creator Action Highlights */}
+            <div className="flex items-center gap-3 w-full md:w-auto justify-end border-t border-white/10 md:border-none pt-4 md:pt-0">
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="w-full md:w-auto px-6 py-3.5 bg-white hover:bg-neutral-200 text-black text-sm font-black rounded-full transition-all shadow-xl hover:scale-102 cursor-pointer flex items-center justify-center gap-2 active:scale-98"
+              >
+                <Plus className="w-4 h-4" />
+                <span>立即创作</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Core Stats Grid (Frosted Glass UI Cards) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {coreStats.map((stat, idx) => (
             <div 
               key={idx} 
-              className="group bg-white border border-neutral-200/60 rounded-2xl p-6 hover:shadow-2xl hover:shadow-neutral-200/50 transition-all duration-300 relative overflow-hidden"
+              className="bg-black/40 backdrop-blur-2xl rounded-2xl shadow-2xl p-6 border border-white/15 hover:border-white/30 hover:bg-black/55 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group"
             >
-              {/* 背景装饰 */}
-              <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${stat.bgColor} opacity-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500`} />
-              
-              <div className="relative">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-xs font-bold text-neutral-600 uppercase tracking-wider">
-                    {stat.label}
-                  </span>
-                  <div className={`w-10 h-10 rounded-xl ${stat.iconBg} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
-                    <stat.icon className="w-5 h-5 text-white" />
-                  </div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
+                  {stat.label}
+                </span>
+                <div className={`w-9 h-9 rounded-xl ${stat.bgColor} ${stat.accentColor} flex items-center justify-center transition-transform group-hover:scale-110 shadow-inner`}>
+                  <stat.icon className="w-4.5 h-4.5" />
                 </div>
-                <div className={`text-4xl font-black font-mono ${stat.textColor} mb-2`}>
-                  {stat.value.toLocaleString()}
-                </div>
-                <div className="flex items-center gap-2 text-xs text-neutral-500">
-                  <TrendingUp className="w-3.5 h-3.5" />
-                  <span>持续增长中</span>
-                </div>
+              </div>
+
+              <div className="text-3xl sm:text-4xl font-extrabold font-mono text-white tracking-tight my-2">
+                {stat.value.toLocaleString()}
+              </div>
+
+              <div className="flex items-center justify-between pt-3 border-t border-white/10 text-[11px]">
+                <span className="text-neutral-400 font-mono">至今汇总</span>
+                <span className={`font-semibold flex items-center gap-1 ${stat.accentColor}`}>
+                  <ArrowUpRight className="w-3 h-3" />
+                  {stat.badge}
+                </span>
               </div>
             </div>
           ))}
         </div>
 
-        {/* 作品统计 */}
-        <div className="bg-white border border-neutral-200/60 rounded-3xl shadow-xl shadow-neutral-200/50 p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
-              <Award className="w-5 h-5 text-white" />
+        {/* Creation Overview Section (Frosted Glass) */}
+        <div className="bg-black/40 backdrop-blur-2xl rounded-2xl sm:rounded-3xl shadow-2xl p-6 sm:p-8 border border-white/15 space-y-6">
+          <div className="flex items-center justify-between pb-4 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/15 text-white flex items-center justify-center shadow-md">
+                <Award className="w-5 h-5 text-amber-300" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white tracking-tight">创作概览</h3>
+                <p className="text-xs text-neutral-400">已公开发布的各类别创作成果汇总</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-neutral-900">作品统计</h2>
-              <p className="text-xs text-neutral-500">各类型作品数量分布</p>
-            </div>
+
+            <button 
+              onClick={() => navigate('/me/works')}
+              className="text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1 cursor-pointer transition-colors"
+            >
+              管理我的全部作品 <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
             {worksStats.map((stat, idx) => (
               <div 
                 key={idx} 
-                className="text-center p-6 bg-gradient-to-br from-neutral-50 to-white rounded-2xl border border-neutral-200/50 hover:shadow-lg transition-all group"
+                className="p-5 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all group"
               >
-                <div className={`w-16 h-16 ${stat.bg} rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform`}>
-                  <stat.icon className={`w-8 h-8 ${stat.color}`} />
+                <div className="flex items-center justify-between mb-3">
+                  <div className={`w-10 h-10 ${stat.bg} rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shadow-inner`}>
+                    <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                  </div>
+                  <span className="text-[10px] font-mono text-neutral-400 font-bold uppercase tracking-wider">TYPE</span>
                 </div>
-                <div className={`text-3xl font-black ${stat.color} font-mono mb-2`}>
+                <div className={`text-2xl sm:text-3xl font-extrabold ${stat.color} font-mono mb-1`}>
                   {stat.value}
                 </div>
-                <div className="text-xs text-neutral-600 font-semibold">{stat.label}</div>
+                <div className="text-xs text-neutral-300 font-bold">{stat.label}</div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* 图表区域 */}
+        {/* Analytics Grid: Follower Growth & Release Rhythm (Frosted Glass) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* 粉丝增长趋势 */}
-          <div className="bg-white border border-neutral-200/60 rounded-3xl shadow-xl shadow-neutral-200/50 p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
-                <TrendingUp className="w-5 h-5 text-white" />
+          
+          {/* Follower Growth Trend Chart */}
+          <div className="bg-black/40 backdrop-blur-2xl rounded-2xl sm:rounded-3xl shadow-2xl p-6 sm:p-8 border border-white/15 flex flex-col justify-between space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-neutral-900">粉丝增长趋势</h2>
-                <p className="text-xs text-neutral-500">近30天粉丝增长情况</p>
+                <h3 className="text-lg font-bold text-white tracking-tight">粉丝增长趋势</h3>
+                <p className="text-xs text-neutral-400">近 30 天新增关注数据变动曲线</p>
               </div>
             </div>
 
             {followerTrend.length > 0 ? (
-              <div className="h-72 flex items-end justify-between gap-1.5 pt-4 border-b-2 border-neutral-200">
+              <div className="h-60 flex items-end justify-between gap-2 pt-4 border-b border-white/10">
                 {followerTrend.map((item, idx) => {
-                  const heightPercent = Math.max((item.newFollowers / maxFollowers) * 100, 3);
+                  const heightPercent = Math.max((item.newFollowers / maxFollowers) * 100, 6);
                   return (
                     <div key={idx} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity mb-1">
-                        <div className="bg-emerald-600 text-white text-xs font-bold px-2 py-1 rounded-lg shadow-lg whitespace-nowrap">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity mb-1 pointer-events-none">
+                        <div className="bg-white text-black text-[10px] font-black px-2 py-0.5 rounded-md shadow-lg whitespace-nowrap font-mono">
                           +{item.newFollowers}
                         </div>
                       </div>
                       <div
-                        className="w-full bg-gradient-to-t from-emerald-500 via-emerald-400 to-emerald-300 rounded-t-xl transition-all hover:from-emerald-600 hover:via-emerald-500 hover:to-emerald-400 shadow-lg shadow-emerald-500/20 cursor-pointer"
+                        className="w-full bg-white/20 group-hover:bg-[#0057FF] rounded-t-lg transition-all cursor-pointer"
                         style={{ height: `${heightPercent}%` }}
                       />
-                      <span className="text-[9px] text-neutral-500 font-mono font-semibold truncate max-w-full rotate-45 mt-2">
+                      <span className="text-[9px] text-neutral-400 font-mono truncate max-w-full mt-1">
                         {item.date.substring(5)}
                       </span>
                     </div>
@@ -247,63 +399,63 @@ export const CreatorDashboardPage: React.FC = () => {
                 })}
               </div>
             ) : (
-              <div className="h-72 flex items-center justify-center text-neutral-400">
-                <div className="text-center">
-                  <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">暂无粉丝增长数据</p>
+              <div className="h-60 flex items-center justify-center text-neutral-400">
+                <div className="text-center space-y-2">
+                  <Users className="w-8 h-8 mx-auto opacity-30 text-white" />
+                  <p className="text-xs text-neutral-400">暂无近期关注增长记录</p>
                 </div>
               </div>
             )}
           </div>
 
-          {/* 内容产出趋势 */}
-          <div className="bg-white border border-neutral-200/60 rounded-3xl shadow-xl shadow-neutral-200/50 p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
-                <Target className="w-5 h-5 text-white" />
+          {/* Release Rhythm Analytics */}
+          <div className="bg-black/40 backdrop-blur-2xl rounded-2xl sm:rounded-3xl shadow-2xl p-6 sm:p-8 border border-white/15 flex flex-col justify-between space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-400 flex items-center justify-center">
+                <Target className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-neutral-900">内容产出趋势</h2>
-                <p className="text-xs text-neutral-500">最近发布的作品统计</p>
+                <h3 className="text-lg font-bold text-white tracking-tight">创作发布节奏</h3>
+                <p className="text-xs text-neutral-400">近段时间各类作品产出轨迹</p>
               </div>
             </div>
 
             {contentTrend.length > 0 ? (
-              <div className="space-y-3 max-h-72 overflow-y-auto pr-2 custom-scrollbar">
+              <div className="space-y-3 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
                 {contentTrend.slice(0, 10).map((item, idx) => {
                   const total = item.articles + item.videos + item.files;
                   return (
-                    <div key={idx} className="bg-neutral-50 rounded-xl p-4 border border-neutral-200/50 hover:border-neutral-300 hover:shadow-md transition-all group">
-                      <div className="flex justify-between items-center mb-3">
-                        <span className="text-xs font-mono font-semibold text-neutral-600">{item.date}</span>
-                        <div className="flex items-center gap-2">
-                          <Zap className="w-4 h-4 text-amber-500" />
-                          <span className="text-sm font-bold text-neutral-900">{total} 个作品</span>
+                    <div key={idx} className="bg-white/5 rounded-xl p-3.5 border border-white/10 hover:bg-white/10 transition-all">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-xs font-mono font-bold text-neutral-300">{item.date}</span>
+                        <div className="flex items-center gap-1.5">
+                          <Zap className="w-3.5 h-3.5 text-amber-400" />
+                          <span className="text-xs font-bold text-white">{total} 项更新</span>
                         </div>
                       </div>
-                      <div className="flex gap-2 h-8">
+                      <div className="flex gap-1.5 h-5">
                         {item.articles > 0 && (
                           <div
-                            className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-xs font-bold hover:from-blue-600 hover:to-blue-700 transition-all shadow-md group-hover:scale-105"
+                            className="bg-blue-500/80 rounded-md flex items-center justify-center text-white text-[10px] font-bold font-mono"
                             style={{ width: `${(item.articles / total) * 100}%` }}
                           >
-                            {item.articles}文
+                            {item.articles} 图文
                           </div>
                         )}
                         {item.videos > 0 && (
                           <div
-                            className="bg-gradient-to-r from-rose-500 to-rose-600 rounded-lg flex items-center justify-center text-white text-xs font-bold hover:from-rose-600 hover:to-rose-700 transition-all shadow-md group-hover:scale-105"
+                            className="bg-purple-500/80 rounded-md flex items-center justify-center text-white text-[10px] font-bold font-mono"
                             style={{ width: `${(item.videos / total) * 100}%` }}
                           >
-                            {item.videos}视
+                            {item.videos} 视频
                           </div>
                         )}
                         {item.files > 0 && (
                           <div
-                            className="bg-gradient-to-r from-amber-500 to-amber-600 rounded-lg flex items-center justify-center text-white text-xs font-bold hover:from-amber-600 hover:to-amber-700 transition-all shadow-md group-hover:scale-105"
+                            className="bg-emerald-500/80 rounded-md flex items-center justify-center text-white text-[10px] font-bold font-mono"
                             style={{ width: `${(item.files / total) * 100}%` }}
                           >
-                            {item.files}文件
+                            {item.files} 资源
                           </div>
                         )}
                       </div>
@@ -312,36 +464,67 @@ export const CreatorDashboardPage: React.FC = () => {
                 })}
               </div>
             ) : (
-              <div className="h-72 flex items-center justify-center text-neutral-400">
-                <div className="text-center">
-                  <BarChart className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">暂无内容产出数据</p>
+              <div className="h-60 flex items-center justify-center text-neutral-400">
+                <div className="text-center space-y-2">
+                  <BarChart className="w-8 h-8 mx-auto opacity-30 text-white" />
+                  <p className="text-xs text-neutral-400">暂无近期发布轨迹</p>
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* 数据洞察提示 */}
-        <div className="bg-gradient-to-r from-blue-50 via-purple-50 to-pink-50 border border-blue-200/50 rounded-2xl p-6">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shrink-0">
-              <Zap className="w-6 h-6 text-white" />
+        {/* PRO Creator Acceleration Banner (Frosted Glass Luxe Accent) */}
+        <div className="bg-black/50 backdrop-blur-2xl border border-white/15 text-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="flex items-center gap-4 relative z-10">
+            <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 text-white flex items-center justify-center shrink-0 shadow-inner">
+              <Sparkles className="w-6 h-6 text-amber-300" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-neutral-900 mb-2">数据洞察</h3>
-              <p className="text-sm text-neutral-700 leading-relaxed">
-                您的内容正在持续增长！继续创作优质作品，与粉丝互动，您的影响力将不断提升。
-                建议定期查看数据趋势，优化创作方向，创造更多价值。
+              <h3 className="text-base font-bold text-white mb-1">PRO 创作者影响力加速计划</h3>
+              <p className="text-xs text-white/70 leading-relaxed max-w-xl">
+                保持每周至少发布 1 篇优质图文或设计资源，可获得首页“创作灵感”优先推荐权重及专属创作者标识认证。
               </p>
             </div>
           </div>
+
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="w-full md:w-auto px-6 py-3 bg-white hover:bg-neutral-200 text-black text-xs font-black rounded-full transition-all shadow-lg cursor-pointer whitespace-nowrap active:scale-95 shrink-0 relative z-10"
+          >
+            立刻发布作品
+          </button>
         </div>
+
+        {/* Bottom Watermark - Consistent with LoginPage */}
+        <div className="pt-6 pb-2 flex flex-col sm:flex-row items-center justify-between text-white/80 text-xs gap-4 relative z-10">
+          <div className="inline-flex items-center gap-2 bg-black/50 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/10 shadow-lg">
+            <span className="bg-black text-white font-bold px-1.5 py-0.5 text-[10px] rounded">LF</span>
+            <span className="font-semibold text-white">LeapLunar04 创作者中心</span>
+          </div>
+          <div className="flex items-center gap-4 text-white/60 font-mono text-[11px]">
+            <span>CREATOR ENGINE v2.0</span>
+            <span>•</span>
+            <span>ANALYTICS & PUBLISHING</span>
+          </div>
+        </div>
+
       </div>
+
+      {/* Create Work Modal */}
+      <CreateWorkModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={() => {
+          loadStats();
+        }}
+      />
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
+          width: 5px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
           background: #f1f5f9;
@@ -358,3 +541,5 @@ export const CreatorDashboardPage: React.FC = () => {
     </div>
   );
 };
+
+

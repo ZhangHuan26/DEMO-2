@@ -10,6 +10,7 @@ import { Article, Comment, User } from '../../types';
 import { articlesApi } from '../../api/articles';
 import { authApi } from '../../api/auth';
 import { useAuth } from '../../context/AuthContext';
+import { showToast } from '../../components/common/Toast';
 import { formatPublishTime } from '../../utils/dateUtils';
 import { ReportModal } from '../../components/common/ReportModal';
 import { ChatDrawer } from '../../components/user/ChatDrawer';
@@ -128,7 +129,7 @@ export const ArticleDetailPage: React.FC = () => {
       setArticle(prev => prev && prev.author ? { ...prev, author: { ...prev.author, isFollowing: isCurrentlyFollowing } } : prev);
       const resCode = err?.response?.data?.code || err?.code;
       if (resCode !== 40900 && !err?.message?.includes('已关注')) {
-        alert(err?.response?.data?.message || err?.message || '操作失败，请重试');
+        showToast({ message: err?.response?.data?.message || err?.message || '操作失败，请重试', type: 'error' });
       }
     }
   };
@@ -152,7 +153,7 @@ export const ArticleDetailPage: React.FC = () => {
       setNewCommentText('');
       setReplyingTo(null);
     } catch {
-      alert('发表评论失败');
+      showToast({ message: '发表评论失败', type: 'error' });
     }
   };
 
@@ -168,7 +169,7 @@ export const ArticleDetailPage: React.FC = () => {
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
-    alert('作品链接已成功复制到剪贴板！');
+    showToast({ message: '作品链接已成功复制到剪贴板！', type: 'success' });
   };
 
   return (

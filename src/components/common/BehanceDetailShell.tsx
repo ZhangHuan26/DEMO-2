@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { User } from '../../types';
 import { resolveImageUrl } from '../../config/env';
+import { showToast } from './Toast';
 import { openAuthorModal } from './AuthorProfileModal';
 
 interface BehanceDetailShellProps {
@@ -138,7 +139,7 @@ export const BehanceDetailShell: React.FC<BehanceDetailShellProps> = ({
               <button
                 onClick={() => {
                   if (isOwner) {
-                    alert('这是您自己发布的作品');
+                    showToast({ message: '这是您自己发布的作品', type: 'warning' });
                   } else if (onToggleFollow) {
                     onToggleFollow();
                   }
@@ -158,7 +159,7 @@ export const BehanceDetailShell: React.FC<BehanceDetailShellProps> = ({
               <button
                 onClick={() => {
                   if (isOwner) {
-                    alert('不能与自己对话');
+                    showToast({ message: '不能与自己对话', type: 'warning' });
                   } else {
                     onOpenChat();
                   }
@@ -224,7 +225,7 @@ export const BehanceDetailShell: React.FC<BehanceDetailShellProps> = ({
           <button
             onClick={() => {
               if (isOwner) {
-                alert('不能与自己对话');
+                showToast({ message: '不能与自己对话', type: 'warning' });
               } else {
                 onOpenChat();
               }

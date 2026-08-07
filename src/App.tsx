@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './context/AuthContext';
 import { UserShell } from './components/user/UserShell';
 import { AdminShell } from './pages/admin/AdminShell';
+import { Toast } from './components/common/Toast';
 
 // User Pages
 import { HomePage } from './pages/user/HomePage';
@@ -46,6 +47,7 @@ import { RegisterPage } from './pages/auth/RegisterPage';
 export function App() {
   return (
     <AuthProvider>
+      <Toast />
       <Router>
         <Routes>
           {/* Auth Routes */}

@@ -302,7 +302,7 @@ export const BehanceImagePicker: React.FC<BehanceImagePickerProps> = ({
           <div className="flex gap-2">
             <input
               type="text"
-              placeholder="https://images.unsplash.com/photo-..."
+              placeholder="https://example.com/image.jpg"
               value={urlInput}
               onChange={(e) => setUrlInput(e.target.value)}
               className={`flex-1 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#0057FF] ${
@@ -319,10 +319,9 @@ export const BehanceImagePicker: React.FC<BehanceImagePickerProps> = ({
               应用 URL
             </button>
           </div>
-          <p className={`text-[10px] ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>支持直接输入 Unsplash、CDN 或公开图片链接</p>
+          <p className={`text-[10px] ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>支持直接输入 CDN 或公开图片链接</p>
         </div>
       )}
     </div>
   );
 };
-

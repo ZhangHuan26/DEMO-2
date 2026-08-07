@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { showToast } from '../../components/common/Toast';
 import { Flag, ShieldAlert, Check, X, AlertTriangle } from 'lucide-react';
 import { Report } from '../../types';
 import { adminApi } from '../../api/admin';
@@ -28,9 +29,9 @@ export const AdminReportsPage: React.FC = () => {
     try {
       await adminApi.handleReport(reportId, { status, handleResult: deleteContent ? '下架违规内容并记录违规扣分' : '忽略举报' });
       setReports(prev => prev.map(r => r.id === reportId ? { ...r, status } : r));
-      alert(status === 1 ? '已确认违规！违规作品已下架并记录扣分。' : '已忽略该举报。');
+      showToast({ message: status === 1 ? '已确认违规！违规作品已下架并记录扣分。' : '已忽略该举报。', type: status === 1 ? 'success' : 'info' });
     } catch {
-      alert('操作失败。');
+      showToast({ message: '操作失败。', type: 'error' });
     }
   };
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ShieldAlert, FileText, Send, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import { Appeal, appealsApi } from '../../api/appeals';
 import { useAuth } from '../../context/AuthContext';
+import { showToast } from '../../components/common/Toast';
 import { useNavigate } from 'react-router-dom';
 
 export const MyAppealsPage: React.FC = () => {
@@ -53,7 +54,7 @@ export const MyAppealsPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!reason.trim()) {
-      alert('请填写申诉原因');
+      showToast({ message: '请填写申诉原因', type: 'warning' });
       return;
     }
     
@@ -72,9 +73,9 @@ export const MyAppealsPage: React.FC = () => {
       
       setReason('');
       setTargetId('');
-      alert('申诉提交成功！管理员将尽快为您审查复核。');
+      showToast({ message: '申诉提交成功！管理员将尽快为您审查复核。', type: 'success' });
     } catch (error: any) {
-      alert(error.message || '申诉提交失败');
+      showToast({ message: error.message || '申诉提交失败', type: 'error' });
     } finally {
       setSubmitting(false);
     }

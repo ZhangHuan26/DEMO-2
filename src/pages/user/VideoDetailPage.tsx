@@ -9,6 +9,7 @@ import { Video, Comment, User } from '../../types';
 import { videosApi } from '../../api/videos';
 import { authApi } from '../../api/auth';
 import { useAuth } from '../../context/AuthContext';
+import { showToast } from '../../components/common/Toast';
 import { ReportModal } from '../../components/common/ReportModal';
 import { ChatDrawer } from '../../components/user/ChatDrawer';
 import { resolveImageUrl } from '../../config/env';
@@ -127,7 +128,7 @@ export const VideoDetailPage: React.FC = () => {
       setVideo(prev => prev && prev.author ? { ...prev, author: { ...prev.author, isFollowing: isCurrentlyFollowing } } : prev);
       const resCode = err?.response?.data?.code || err?.code;
       if (resCode !== 40900 && !err?.message?.includes('已关注')) {
-        alert(err?.response?.data?.message || err?.message || '操作失败，请重试');
+        showToast({ message: err?.response?.data?.message || err?.message || '操作失败，请重试', type: 'error' });
       }
     }
   };
@@ -145,13 +146,13 @@ export const VideoDetailPage: React.FC = () => {
       }
       setNewCommentText('');
     } catch {
-      alert('发表评论失败');
+      showToast({ message: '发表评论失败', type: 'error' });
     }
   };
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
-    alert('视频作品链接已成功复制到剪贴板！');
+    showToast({ message: '视频作品链接已成功复制到剪贴板！', type: 'success' });
   };
 
   const videoPlayerStage = (

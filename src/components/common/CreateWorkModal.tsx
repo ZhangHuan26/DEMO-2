@@ -5,10 +5,12 @@ import { Category, Article, Video as VideoType, FileItem } from '../../types';
 import { articlesApi } from '../../api/articles';
 import { videosApi } from '../../api/videos';
 import { filesApi } from '../../api/files';
+import { categoriesApi } from '../../api/categories';
 import { BehanceImagePicker } from './BehanceImagePicker';
 import { BehanceVideoPicker } from './BehanceVideoPicker';
 import { BehanceFilePicker } from './BehanceFilePicker';
 import { RichTextEditor } from './RichTextEditor';
+import { showToast } from './Toast';
 
 interface CreateWorkModalProps {
   isOpen: boolean;
@@ -42,7 +44,7 @@ export const CreateWorkModal: React.FC<CreateWorkModalProps> = ({
 
   // Shared Form Fields
   const [title, setTitle] = useState('');
-  const [coverImage, setCoverImage] = useState('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop');
+  const [coverImage, setCoverImage] = useState('');
   const [categoryId, setCategoryId] = useState<number>(1);
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [status, setStatus] = useState<number>(0); // 0: Public, 1: Private
@@ -53,16 +55,16 @@ export const CreateWorkModal: React.FC<CreateWorkModalProps> = ({
   const [articleContent, setArticleContent] = useState('');
 
   // Video Specific
-  const [videoUrl, setVideoUrl] = useState('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4');
+  const [videoUrl, setVideoUrl] = useState('');
   const [videoDesc, setVideoDesc] = useState('');
-  const [duration, setDuration] = useState('03:45');
+  const [duration, setDuration] = useState('');
   const [videoFileSize, setVideoFileSize] = useState<number | undefined>(undefined);
 
   // File Specific
-  const [fileUrl, setFileUrl] = useState('https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf');
-  const [fileName, setFileName] = useState('设计资源包_Design_Resource.zip');
-  const [fileSize, setFileSize] = useState('24.8 MB');
-  const [fileType, setFileType] = useState('zip');
+  const [fileUrl, setFileUrl] = useState('');
+  const [fileName, setFileName] = useState('');
+  const [fileSize, setFileSize] = useState('');
+  const [fileType, setFileType] = useState('');
   const [fileDesc, setFileDesc] = useState('');
   const [allowDownload, setAllowDownload] = useState<number>(1);
   const [selectedResourceFile, setSelectedResourceFile] = useState<File | null>(null);
@@ -78,18 +80,18 @@ export const CreateWorkModal: React.FC<CreateWorkModalProps> = ({
       setWorkType(initialType);
     }
     setTitle('');
-    setCoverImage('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop');
+    setCoverImage('');
     setCategoryId(1);
     setStatus(0);
     setSummary('');
     setArticleContent('');
-    setVideoUrl('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4');
+    setVideoUrl('');
     setVideoDesc('');
-    setDuration('03:45');
-    setFileUrl('https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf');
-    setFileName('设计资源包_Design_Resource.zip');
-    setFileSize('24.8 MB');
-    setFileType('zip');
+    setDuration('');
+    setFileUrl('');
+    setFileName('');
+    setFileSize('');
+    setFileType('');
     setFileDesc('');
     setAllowDownload(1);
 
@@ -134,15 +136,22 @@ export const CreateWorkModal: React.FC<CreateWorkModalProps> = ({
 
     const fetchCats = async () => {
       try {
-        const all = await videosApi.getAllCategories();
+        const all = await categoriesApi.getAllCategories();
+        const articleCats = all.articles || [];
+        const videoCats = all.videos || [];
+        const fileCats = all.files || [];
+
         setCategories({
-          article: all.articleCategories,
-          video: all.videoCategories,
-          file: all.fileCategories,
+          article: articleCats,
+          video: videoCats,
+          file: fileCats,
         });
-        if (all.articleCategories.length > 0) setCategoryId(prev => prev || all.articleCategories[0].id);
-      } catch {
-        // fallback
+
+        if (articleCats.length > 0) {
+          setCategoryId(prev => prev || articleCats[0].id);
+        }
+      } catch (err) {
+        console.error('获取分类失败:', err);
       }
     };
     fetchCats();
@@ -154,7 +163,10 @@ export const CreateWorkModal: React.FC<CreateWorkModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return alert('请输入作品标题');
+    if (!title.trim()) {
+      showToast({ message: '请输入作品标题', type: 'warning' });
+      return;
+    }
     setLoading(true);
 
     try {
@@ -194,7 +206,7 @@ export const CreateWorkModal: React.FC<CreateWorkModalProps> = ({
             status,
           });
         }
-        alert('作品修改成功');
+        showToast({ message: '作品修改成功', type: 'success' });
       } else {
         // 新增模式：创建作品
         if (workType === 'article') {
@@ -251,7 +263,7 @@ export const CreateWorkModal: React.FC<CreateWorkModalProps> = ({
       if (onSuccess) onSuccess();
       onClose();
     } catch (err: any) {
-      alert(err.message || (isEditMode ? '修改作品失败' : '发布作品失败'));
+      showToast({ message: err.message || (isEditMode ? '修改作品失败' : '发布作品失败'), type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -297,7 +309,7 @@ export const CreateWorkModal: React.FC<CreateWorkModalProps> = ({
               type="button"
               onClick={() => {
                 setWorkType('article');
-                setCoverImage('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop');
+                setCoverImage('');
                 if (categories.article[0]) setCategoryId(categories.article[0].id);
               }}
               className={`py-3 rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer ${
@@ -306,13 +318,12 @@ export const CreateWorkModal: React.FC<CreateWorkModalProps> = ({
             >
               <FileText className="w-4 h-4" />
               <span>图文作品</span>
-              <span className="text-[10px] px-1.5 py-0.2 bg-white/20 rounded-full font-mono">20预设</span>
             </button>
             <button
               type="button"
               onClick={() => {
                 setWorkType('video');
-                setCoverImage('https://images.unsplash.com/photo-1536240478700-b869070f9279?q=80&w=800&auto=format&fit=crop');
+                setCoverImage('');
                 if (categories.video[0]) setCategoryId(categories.video[0].id);
               }}
               className={`py-3 rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer ${
@@ -321,13 +332,12 @@ export const CreateWorkModal: React.FC<CreateWorkModalProps> = ({
             >
               <Video className="w-4 h-4" />
               <span>视频作品</span>
-              <span className="text-[10px] px-1.5 py-0.2 bg-white/20 rounded-full font-mono">20预设</span>
             </button>
             <button
               type="button"
               onClick={() => {
                 setWorkType('file');
-                setCoverImage('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop');
+                setCoverImage('');
                 if (categories.file[0]) setCategoryId(categories.file[0].id);
               }}
               className={`py-3 rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer ${
@@ -336,7 +346,6 @@ export const CreateWorkModal: React.FC<CreateWorkModalProps> = ({
             >
               <FolderPlus className="w-4 h-4" />
               <span>资源文件</span>
-              <span className="text-[10px] px-1.5 py-0.2 bg-white/20 rounded-full font-mono">20预设</span>
             </button>
           </div>
         )}
@@ -503,7 +512,7 @@ export const CreateWorkModal: React.FC<CreateWorkModalProps> = ({
           <BehanceImagePicker
             value={coverImage}
             onChange={setCoverImage}
-            label={`作品封面图 (自动匹配 ${workType === 'article' ? '图文视觉' : workType === 'video' ? '视频秀场' : '资源文件'} 20 张高清图库)`}
+            label={`作品封面图 (${workType === 'article' ? '图文视觉' : workType === 'video' ? '视频秀场' : '资源文件'}封面)`}
             workType={workType}
             theme="dark"
           />

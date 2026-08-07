@@ -61,6 +61,7 @@ export interface Article {
   categoryName?: string;
   category?: Category;
   status: number; // 0: Public, 1: Private
+  visibility?: number; // 0: Public, 1: Private
   isHidden: number; // 0: Normal, 1: Hidden by Admin
   allowDownload?: number; // 0: Forbidden, 1: Allowed
   isPinned?: number; // 0: Normal, 1: Pinned
@@ -87,6 +88,7 @@ export interface Video {
   categoryName?: string;
   category?: Category;
   status: number; // 0: Public, 1: Private
+  visibility?: number; // 0: Public, 1: Private
   isHidden: number; // 0: Normal, 1: Hidden
   allowDownload: number; // 0: Forbidden, 1: Allowed
   isPinned?: number; // 0: Normal, 1: Pinned
@@ -114,6 +116,7 @@ export interface FileItem {
   categoryName?: string;
   category?: Category;
   status: number; // 0: Public, 1: Private
+  visibility?: number; // 0: Public, 1: Private
   isHidden: number; // 0: Normal, 1: Hidden
   allowDownload: number; // 0: Forbidden, 1: Allowed
   isPinned?: number; // 0: Normal, 1: Pinned

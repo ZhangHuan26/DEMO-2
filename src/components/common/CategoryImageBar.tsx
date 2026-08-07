@@ -17,16 +17,6 @@ interface CategoryImageBarProps {
   allIcon?: React.ElementType;
 }
 
-const DEFAULT_COVER_IMAGES = [
-  'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?q=80&w=800&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?q=80&w=800&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1541701494587-cb58502866ab?q=80&w=800&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=800&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=800&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1618005198919-d3d4b5a92ead?q=80&w=800&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?q=80&w=800&auto=format&fit=crop',
-];
 
 export const CategoryImageBar: React.FC<CategoryImageBarProps> = ({
   categories,
@@ -74,13 +64,13 @@ export const CategoryImageBar: React.FC<CategoryImageBarProps> = ({
       id: null,
       name: allLabel,
       isAll: true,
-      coverImage: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop',
+      coverImage: '',
     },
-    ...(Array.isArray(categories) ? categories : []).map((c, idx) => ({
+    ...(Array.isArray(categories) ? categories : []).map((c) => ({
       id: c.id,
       name: c.name,
       isAll: false,
-      coverImage: c.coverImage || DEFAULT_COVER_IMAGES[idx % DEFAULT_COVER_IMAGES.length],
+      coverImage: c.coverImage || '',
     })),
   ];
 

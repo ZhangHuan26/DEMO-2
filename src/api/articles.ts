@@ -97,16 +97,19 @@ export const articlesApi = {
       avatar: authorObj.avatar || authorObj.avatarUrl || authorObj.headImg || '',
     } : undefined;
 
+    const statusVal = article?.visibility !== undefined ? article.visibility : (article?.status ?? 0);
     return {
       ...article,
       author: normalizedAuthor,
+      status: statusVal,
+      visibility: statusVal,
       viewCount: article?.viewCount ?? article?.view_count ?? article?.views ?? article?.readCount ?? article?.viewsCount ?? 0,
       categoryName: article?.category?.name || article?.categoryName || article?.category_name,
     };
   },
 
   // 5.4 POST /articles
-  createArticle: async (data: { title: string; content: string; summary?: string; coverImage: string; categoryId: number; status?: number }) => {
+  createArticle: async (data: { title: string; content: string; summary?: string; coverImage: string; categoryId: number; status?: number; visibility?: number }) => {
     // 移除coverImage中的公共路径前缀
     let coverImageValue = data.coverImage;
     const baseUrl = resolveImageUrl('').replace(/\/$/, '');
@@ -114,16 +117,22 @@ export const articlesApi = {
       coverImageValue = coverImageValue.substring(baseUrl.length);
     }
     
+    const statusVal = data.visibility !== undefined ? data.visibility : (data.status ?? 0);
     const res = await apiClient.post('/articles', {
       ...data,
       coverImage: coverImageValue,
+      status: statusVal,
+      visibility: statusVal,
     });
     return res.data;
   },
 
   // 5.5 PUT /articles/{id}
   updateArticle: async (id: number, data: Partial<Article>) => {
-    const res = await apiClient.put(`/articles/${id}`, data);
+    const payload: any = { ...data };
+    if (data.status !== undefined && data.visibility === undefined) payload.visibility = data.status;
+    if (data.visibility !== undefined && data.status === undefined) payload.status = data.visibility;
+    const res = await apiClient.put(`/articles/${id}`, payload);
     return res.data;
   },
 
@@ -135,8 +144,13 @@ export const articlesApi = {
 
   // 5.7 PUT /articles/{id}/status
   updateArticleStatus: async (id: number, status: number) => {
-    const res = await apiClient.put(`/articles/${id}/status`, { status });
-    return res.data;
+    try {
+      const res = await apiClient.put(`/articles/${id}/status`, { status, visibility: status });
+      return res.data;
+    } catch {
+      const res = await apiClient.put(`/articles/${id}`, { status, visibility: status });
+      return res.data;
+    }
   },
 
   // 5.8 GET /admin/articles

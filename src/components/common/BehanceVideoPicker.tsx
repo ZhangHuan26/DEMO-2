@@ -1,22 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { Upload, Link as LinkIcon, Film, Check, Sparkles, Play, Clock, AlertCircle } from 'lucide-react';
+import { Upload, Link as LinkIcon, Film, Check, Play, Clock, AlertCircle } from 'lucide-react';
 import { videosApi } from '../../api/videos';
 import { resolveImageUrl } from '../../config/env';
-
-export interface PresetVideo {
-  url: string;
-  title: string;
-  duration: string;
-}
-
-export const PRESET_SAMPLE_VIDEOS: PresetVideo[] = [
-  { url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', title: 'Big Buck Bunny 3D 动画短片', duration: '09:56' },
-  { url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4', title: 'Elephants Dream 赛博朋克 3D', duration: '10:53' },
-  { url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', title: 'Chromecast 运动特效片头', duration: '00:15' },
-  { url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4', title: '极光风光 4K 视觉流', duration: '00:15' },
-  { url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', title: '炫彩光流动效演示', duration: '01:00' },
-  { url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4', title: 'Tears of Steel 科幻特效大片', duration: '12:14' },
-];
 
 interface BehanceVideoPickerProps {
   value: string;
@@ -33,7 +18,7 @@ export const BehanceVideoPicker: React.FC<BehanceVideoPickerProps> = ({
   onFileSizeChange,
   label = '上传/设置视频素材',
 }) => {
-  const [activeTab, setActiveTab] = useState<'upload' | 'url' | 'presets'>('upload');
+  const [activeTab, setActiveTab] = useState<'upload' | 'url'>('upload');
   const [urlInput, setUrlInput] = useState(value);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
@@ -162,18 +147,6 @@ export const BehanceVideoPicker: React.FC<BehanceVideoPickerProps> = ({
             <span>网络 URL</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('presets')}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              activeTab === 'presets'
-                ? 'bg-purple-600 text-white shadow-md'
-                : 'text-neutral-400 hover:text-white'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>预设示例</span>
-          </button>
         </div>
       </div>
 
@@ -241,44 +214,6 @@ export const BehanceVideoPicker: React.FC<BehanceVideoPickerProps> = ({
               应用 URL
             </button>
           </div>
-        </div>
-      )}
-
-      {/* Tab Content: Presets */}
-      {activeTab === 'presets' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
-          {PRESET_SAMPLE_VIDEOS.map((item, idx) => {
-            const isSelected = value === item.url;
-            return (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => {
-                  onChange(item.url);
-                  setUrlInput(item.url);
-                  if (onDurationChange) onDurationChange(item.duration);
-                }}
-                className={`p-2.5 rounded-xl border text-left transition-all flex items-center justify-between gap-2 cursor-pointer ${
-                  isSelected
-                    ? 'bg-purple-950/60 border-purple-500 text-white'
-                    : 'bg-neutral-900/60 border-neutral-800 hover:border-neutral-700 text-neutral-300'
-                }`}
-              >
-                <div className="flex items-center gap-2.5 truncate">
-                  <div className="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
-                    <Play className="w-3.5 h-3.5 fill-purple-400" />
-                  </div>
-                  <div className="truncate">
-                    <div className="text-xs font-bold truncate">{item.title}</div>
-                    <div className="text-[10px] text-neutral-500 flex items-center gap-1 font-mono">
-                      <Clock className="w-3 h-3" /> {item.duration}
-                    </div>
-                  </div>
-                </div>
-                {isSelected && <Check className="w-4 h-4 text-purple-400 shrink-0" />}
-              </button>
-            );
-          })}
         </div>
       )}
 

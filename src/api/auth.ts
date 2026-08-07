@@ -251,7 +251,10 @@ export const authApi = {
       const res = await apiClient.get('/users/recommend');
       const result = res.data;
       const data = result?.data ?? result;
-      const list = Array.isArray(data) ? data : data?.list;
+      // 后端返回 { code:0, data: { users: [...] } } 或 { code:0, data: [...] } 或 { code:0, data: { list: [...] } }
+      const list = Array.isArray(data)
+        ? data
+        : data?.users ?? data?.list ?? data?.records ?? [];
       return Array.isArray(list) ? list : [];
     } catch {
       return [];

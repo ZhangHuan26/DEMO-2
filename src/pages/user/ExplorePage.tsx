@@ -78,12 +78,11 @@ export const ExplorePage: React.FC = () => {
     setIsSearching(true);
     const timer = setTimeout(async () => {
       try {
-        const res = await searchApi.globalSearch(searchQuery.trim(), 'all');
-        const data = res?.data || res;
+        const data = await searchApi.globalSearch(searchQuery.trim(), 'all');
         setSearchResults({
-          articles: Array.isArray(data?.articles?.list) ? data.articles.list : (Array.isArray(data?.articles) ? data.articles : []),
-          videos: Array.isArray(data?.videos?.list) ? data.videos.list : (Array.isArray(data?.videos) ? data.videos : []),
-          files: Array.isArray(data?.files?.list) ? data.files.list : (Array.isArray(data?.files) ? data.files : []),
+          articles: Array.isArray(data?.articles) ? data.articles : [],
+          videos: Array.isArray(data?.videos) ? data.videos : [],
+          files: Array.isArray(data?.files) ? data.files : [],
         });
       } catch (err) {
         console.error('Search failed:', err);
